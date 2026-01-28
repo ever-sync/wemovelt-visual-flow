@@ -7,16 +7,7 @@ import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
 import GymLocationsSection from "@/components/GymLocationsSection";
 import { useNavigate } from "react-router-dom";
-
-const weekDays = [
-  { day: "Seg", checked: true },
-  { day: "Ter", checked: true },
-  { day: "Qua", checked: true },
-  { day: "Qui", checked: false },
-  { day: "Sex", checked: null },
-  { day: "Sáb", checked: null },
-  { day: "Dom", checked: null },
-];
+import { useCheckIn } from "@/hooks/useCheckIn";
 
 const habits = [
   { icon: "💧", label: "Hidratação", color: "bg-blue-500/20" },
@@ -28,6 +19,8 @@ const Home = () => {
   const navigate = useNavigate();
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  
+  const { weekData } = useCheckIn();
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -61,9 +54,9 @@ const Home = () => {
             <span className="text-primary">●</span> FREQUÊNCIA
           </h2>
           <div className="bg-card rounded-2xl p-4">
-            {/* Week days */}
+            {/* Week days - now using real data */}
             <div className="flex justify-between mb-4">
-              {weekDays.map(({ day, checked }) => (
+              {weekData.map(({ day, checked }) => (
                 <div key={day} className="flex flex-col items-center gap-1">
                   <span className="text-xs text-muted-foreground">{day}</span>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${

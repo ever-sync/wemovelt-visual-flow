@@ -5,16 +5,7 @@ import { MapPin, Target, Check, X, Trophy, Flame } from "lucide-react";
 import { useState } from "react";
 import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
-
-const weekData = [
-  { day: "Seg", date: 9, checked: true },
-  { day: "Ter", date: 10, checked: true },
-  { day: "Qua", date: 11, checked: true },
-  { day: "Qui", date: 12, checked: false },
-  { day: "Sex", date: 13, checked: null },
-  { day: "Sáb", date: 14, checked: null },
-  { day: "Dom", date: 15, checked: null },
-];
+import { useCheckIn } from "@/hooks/useCheckIn";
 
 const goals = [
   { id: 1, label: "Treinar 4x por semana", progress: 3, total: 4, completed: false },
@@ -22,16 +13,16 @@ const goals = [
   { id: 3, label: "Dormir 8h por noite", progress: 7, total: 7, completed: true },
 ];
 
-const stats = [
-  { icon: Flame, label: "Sequência", value: "3 dias", color: "text-orange-400" },
-  { icon: Trophy, label: "Metas cumpridas", value: "12", color: "text-yellow-400" },
-];
-
 const Frequencia = () => {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  
+  const { weekData, streak, weeklyPercentage } = useCheckIn();
 
-  const frequencyPercentage = Math.round((weekData.filter(d => d.checked === true).length / 7) * 100);
+  const stats = [
+    { icon: Flame, label: "Sequência", value: `${streak} ${streak === 1 ? "dia" : "dias"}`, color: "text-orange-400" },
+    { icon: Trophy, label: "Metas cumpridas", value: "12", color: "text-yellow-400" },
+  ];
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -59,7 +50,7 @@ const Frequencia = () => {
         <section className="animate-slide-up">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold">Esta semana</h2>
-            <span className="text-primary font-bold">{frequencyPercentage}%</span>
+            <span className="text-primary font-bold">{weeklyPercentage}%</span>
           </div>
           
           <div className="bg-card rounded-2xl p-4">
