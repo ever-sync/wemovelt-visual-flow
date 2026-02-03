@@ -1,8 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Target, BarChart3, Calendar, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Target, BarChart3, Calendar, Sparkles, Dumbbell } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useWorkouts } from "@/hooks/useWorkouts";
+import { useAuth } from "@/contexts/AuthContext";
+import ExerciseSelector, { SelectedExercise } from "@/components/ExerciseSelector";
 
 interface CreateWorkoutModalProps {
   open: boolean;
@@ -30,35 +34,78 @@ const frequencies = [
 ];
 
 const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => {
+  const { user } = useAuth();
+  const { createWorkout, isCreating } = useWorkouts();
+  
   const [step, setStep] = useState(1);
+  const [workoutName, setWorkoutName] = useState("");
   const [selectedObjective, setSelectedObjective] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [selectedFrequency, setSelectedFrequency] = useState<number | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
 
-  const handleGenerate = () => {
-    setGenerating(true);
-    setTimeout(() => {
-      setGenerating(false);
+  const resetForm = () => {
+    setStep(1);
+    setWorkoutName("");
+    setSelectedObjective(null);
+    setSelectedLevel(null);
+    setSelectedFrequency(null);
+    setSelectedExercises([]);
+  };
+
+  const handleCreate = async () => {
+    if (!user) {
+      toast.error("Faça login para criar treinos");
+      return;
+    }
+
+    if (!workoutName.trim()) {
+      toast.error("Dê um nome ao seu treino");
+      return;
+    }
+
+    if (selectedExercises.length === 0) {
+      toast.error("Selecione pelo menos um exercício");
+      return;
+    }
+
+    try {
+      await createWorkout({
+        name: workoutName.trim(),
+        objective: selectedObjective || undefined,
+        frequency: selectedFrequency || undefined,
+        difficulty: selectedLevel || undefined,
+        exercises: selectedExercises.map((ex, index) => ({
+          equipment_id: ex.equipment_id,
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          rest_seconds: ex.rest_seconds,
+          order_index: index,
+        })),
+      });
+      
       toast.success("Treino criado com sucesso! 🎉");
       onOpenChange(false);
-      // Reset state
-      setStep(1);
-      setSelectedObjective(null);
-      setSelectedLevel(null);
-      setSelectedFrequency(null);
-    }, 2000);
+      resetForm();
+    } catch (error) {
+      toast.error("Erro ao criar treino");
+    }
   };
 
   const canProceed = () => {
     if (step === 1) return selectedObjective;
     if (step === 2) return selectedLevel;
     if (step === 3) return selectedFrequency;
+    if (step === 4) return selectedExercises.length > 0;
+    if (step === 5) return workoutName.trim().length > 0;
     return false;
   };
 
+  const totalSteps = 5;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
       <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
@@ -70,11 +117,11 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
         <div className="mt-4">
           {/* Progress indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            {[1, 2, 3].map((s) => (
+            {Array.from({ length: totalSteps }).map((_, i) => (
               <div
-                key={s}
+                key={i}
                 className={`w-3 h-3 rounded-full transition-all ${
-                  s === step ? "wemovelt-gradient w-6" : s < step ? "bg-success" : "bg-secondary"
+                  i + 1 === step ? "wemovelt-gradient w-6" : i + 1 < step ? "bg-success" : "bg-secondary"
                 }`}
               />
             ))}
@@ -164,6 +211,56 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
             </div>
           )}
 
+          {/* Step 4: Exercises */}
+          {step === 4 && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center mb-4">
+                <Dumbbell className="mx-auto text-primary mb-2" size={32} />
+                <h3 className="font-bold">Selecione os exercícios</h3>
+                <p className="text-sm text-muted-foreground">Escolha e configure cada exercício</p>
+              </div>
+
+              <ExerciseSelector
+                selectedExercises={selectedExercises}
+                onSelect={setSelectedExercises}
+              />
+            </div>
+          )}
+
+          {/* Step 5: Name */}
+          {step === 5 && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center mb-4">
+                <Sparkles className="mx-auto text-primary mb-2" size={32} />
+                <h3 className="font-bold">Dê um nome ao treino</h3>
+                <p className="text-sm text-muted-foreground">Um nome para identificar seu treino</p>
+              </div>
+
+              <Input
+                placeholder="Ex: Treino de Peito e Tríceps"
+                value={workoutName}
+                onChange={(e) => setWorkoutName(e.target.value)}
+                className="bg-secondary border-0 rounded-xl h-12"
+              />
+
+              <div className="bg-secondary rounded-xl p-4 space-y-2">
+                <h4 className="font-medium text-sm">Resumo do treino:</h4>
+                <p className="text-xs text-muted-foreground">
+                  Objetivo: {objectives.find(o => o.id === selectedObjective)?.label}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Nível: {levels.find(l => l.id === selectedLevel)?.label}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Frequência: {selectedFrequency}x por semana
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Exercícios: {selectedExercises.length}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
           <div className="flex gap-3 mt-6">
             {step > 1 && (
@@ -176,7 +273,7 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
               </Button>
             )}
             
-            {step < 3 ? (
+            {step < totalSteps ? (
               <Button
                 onClick={() => setStep(step + 1)}
                 disabled={!canProceed()}
@@ -186,19 +283,19 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
               </Button>
             ) : (
               <Button
-                onClick={handleGenerate}
-                disabled={!canProceed() || generating}
+                onClick={handleCreate}
+                disabled={!canProceed() || isCreating}
                 className="flex-1 wemovelt-gradient rounded-xl font-bold"
               >
-                {generating ? (
+                {isCreating ? (
                   <>
                     <Sparkles className="mr-2 animate-spin" size={18} />
-                    Gerando...
+                    Criando...
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2" size={18} />
-                    Gerar Treino
+                    Criar Treino
                   </>
                 )}
               </Button>

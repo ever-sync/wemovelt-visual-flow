@@ -1,13 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Play, AlertTriangle, CheckCircle } from "lucide-react";
-
-interface Equipment {
-  id: number;
-  name: string;
-  image: string;
-  muscles: string;
-}
+import { AlertTriangle, CheckCircle, Plus } from "lucide-react";
+import VideoPlayer from "@/components/VideoPlayer";
+import type { Equipment } from "@/hooks/useEquipment";
 
 interface EquipmentModalProps {
   equipment: Equipment | null;
@@ -15,54 +10,65 @@ interface EquipmentModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const instructions = [
-  "Ajuste o banco na posição adequada para seu corpo",
-  "Mantenha os pés firmes no chão durante todo o movimento",
-  "Controle a descida - não deixe o peso cair",
-  "Expire ao empurrar, inspire ao descer",
-];
-
-const tips = [
-  { icon: CheckCircle, text: "Mantenha a coluna apoiada no banco", type: "good" },
-  { icon: AlertTriangle, text: "Não trave os cotovelos completamente", type: "warning" },
-];
-
 const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) => {
   if (!equipment) return null;
+
+  // Generate instructions based on equipment
+  const getInstructions = () => {
+    if (equipment.description) {
+      return [equipment.description];
+    }
+    return [
+      "Ajuste o equipamento na posição adequada para seu corpo",
+      "Mantenha a postura correta durante todo o movimento",
+      "Controle a descida - não deixe o peso cair",
+      "Expire ao fazer força, inspire ao retornar",
+    ];
+  };
+
+  const tips = [
+    { icon: CheckCircle, text: "Mantenha a coluna neutra durante o exercício", type: "good" },
+    { icon: AlertTriangle, text: "Evite movimentos bruscos ou com impulso", type: "warning" },
+  ];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="bg-card border-t-border rounded-t-3xl h-[85vh] p-0">
         <div className="overflow-y-auto h-full">
-          {/* Video placeholder */}
-          <div className="relative aspect-video bg-secondary">
-            <img 
-              src={equipment.image} 
-              alt={equipment.name}
-              className="w-full h-full object-cover"
+          {/* Video */}
+          <div className="p-4">
+            <VideoPlayer
+              videoUrl={equipment.video_url}
+              imageUrl={equipment.image_url}
+              title={equipment.name}
             />
-            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-              <button className="w-16 h-16 wemovelt-gradient rounded-full flex items-center justify-center hover:scale-110 transition-transform">
-                <Play size={32} className="ml-1" />
-              </button>
-            </div>
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-3">
-                <p className="text-xs text-muted-foreground">Vídeo demonstrativo</p>
-                <p className="font-bold">{equipment.name}</p>
-              </div>
-            </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="px-6 pb-6 space-y-6">
             <SheetHeader>
               <SheetTitle className="text-2xl font-bold text-left">
                 {equipment.name}
               </SheetTitle>
               <p className="text-muted-foreground text-left">
-                Músculos: <span className="text-primary">{equipment.muscles}</span>
+                Músculos: <span className="text-primary">{equipment.muscles?.join(", ") || "Não especificado"}</span>
               </p>
+              {equipment.difficulty && (
+                <p className="text-sm text-muted-foreground text-left">
+                  Dificuldade: <span className="capitalize">{equipment.difficulty}</span>
+                </p>
+              )}
             </SheetHeader>
+
+            {/* Description */}
+            {equipment.description && (
+              <section>
+                <h3 className="font-bold mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full" />
+                  Descrição
+                </h3>
+                <p className="text-muted-foreground text-sm">{equipment.description}</p>
+              </section>
+            )}
 
             {/* Instructions */}
             <section>
@@ -71,7 +77,7 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
                 Como executar
               </h3>
               <ol className="space-y-3">
-                {instructions.map((instruction, index) => (
+                {getInstructions().map((instruction, index) => (
                   <li key={index} className="flex gap-3 text-sm">
                     <span className="w-6 h-6 wemovelt-gradient rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {index + 1}
@@ -104,7 +110,8 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
             </section>
 
             <Button className="w-full h-14 wemovelt-gradient rounded-2xl font-bold text-lg">
-              Iniciar exercício
+              <Plus size={20} className="mr-2" />
+              Adicionar ao Treino
             </Button>
           </div>
         </div>

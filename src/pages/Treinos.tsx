@@ -6,6 +6,8 @@ import EquipmentModal from "@/components/modals/EquipmentModal";
 import MyWorkoutsModal from "@/components/modals/MyWorkoutsModal";
 import DailyWorkoutModal from "@/components/modals/DailyWorkoutModal";
 import CreateWorkoutModal from "@/components/modals/CreateWorkoutModal";
+import { useEquipment, Equipment } from "@/hooks/useEquipment";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const workoutCards = [
   { icon: Play, label: "Meus treinos", color: "wemovelt-gradient", action: "my-workouts" },
@@ -13,20 +15,18 @@ const workoutCards = [
   { icon: Plus, label: "Criar treino", color: "bg-secondary", action: "create-workout" },
 ];
 
-const equipments = [
-  { id: 1, name: "Supino", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&h=200&fit=crop", muscles: "Peito, Tríceps" },
-  { id: 2, name: "Leg Press", image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=200&h=200&fit=crop", muscles: "Quadríceps, Glúteos" },
-  { id: 3, name: "Puxada", image: "https://images.unsplash.com/photo-1598971639058-a94bde43a746?w=200&h=200&fit=crop", muscles: "Costas, Bíceps" },
-  { id: 4, name: "Cadeira Extensora", image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=200&h=200&fit=crop", muscles: "Quadríceps" },
-  { id: 5, name: "Desenvolvimento", image: "https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=200&h=200&fit=crop", muscles: "Ombros, Tríceps" },
-  { id: 6, name: "Rosca Direta", image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=200&h=200&fit=crop", muscles: "Bíceps" },
-];
-
 const Treinos = () => {
-  const [selectedEquipment, setSelectedEquipment] = useState<typeof equipments[0] | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [myWorkoutsOpen, setMyWorkoutsOpen] = useState(false);
   const [dailyWorkoutOpen, setDailyWorkoutOpen] = useState(false);
   const [createWorkoutOpen, setCreateWorkoutOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const { equipment, isLoading, categories } = useEquipment();
+
+  const filteredEquipment = selectedCategory 
+    ? equipment.filter(eq => eq.category === selectedCategory)
+    : equipment;
 
   const handleCardClick = (action: string) => {
     if (action === "my-workouts") setMyWorkoutsOpen(true);
@@ -55,6 +55,31 @@ const Treinos = () => {
           </div>
         </section>
 
+        {/* Category Filters */}
+        <section className="animate-fade-in">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                !selectedCategory ? "wemovelt-gradient" : "bg-secondary hover:bg-secondary/80"
+              }`}
+            >
+              Todos
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap capitalize transition-colors ${
+                  selectedCategory === category ? "wemovelt-gradient" : "bg-secondary hover:bg-secondary/80"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Equipamentos */}
         <section className="animate-slide-up">
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
@@ -62,27 +87,54 @@ const Treinos = () => {
             EQUIPAMENTOS
           </h2>
           
-          <div className="grid grid-cols-2 gap-3">
-            {equipments.map((equipment) => (
-              <div
-                key={equipment.id}
-                onClick={() => setSelectedEquipment(equipment)}
-                className="bg-card rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform"
-              >
-                <div className="aspect-square bg-secondary">
-                  <img 
-                    src={equipment.image} 
-                    alt={equipment.name}
-                    className="w-full h-full object-cover"
-                  />
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-card rounded-2xl overflow-hidden">
+                  <Skeleton className="aspect-square" />
+                  <div className="p-3 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
                 </div>
-                <div className="p-3">
-                  <h3 className="font-bold text-sm">{equipment.name}</h3>
-                  <p className="text-xs text-muted-foreground">{equipment.muscles}</p>
+              ))}
+            </div>
+          ) : filteredEquipment.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Dumbbell size={48} className="mx-auto mb-2 opacity-50" />
+              <p>Nenhum equipamento encontrado</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {filteredEquipment.map((eq) => (
+                <div
+                  key={eq.id}
+                  onClick={() => setSelectedEquipment(eq)}
+                  className="bg-card rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform"
+                >
+                  <div className="aspect-square bg-secondary">
+                    {eq.image_url ? (
+                      <img 
+                        src={eq.image_url} 
+                        alt={eq.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Dumbbell size={32} className="text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-bold text-sm">{eq.name}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {eq.muscles?.join(", ") || ""}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
