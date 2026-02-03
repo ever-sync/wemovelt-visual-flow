@@ -1,201 +1,122 @@
 
-# Plano: Integração com Google Maps
+# Plano: Marcadores Personalizados + Navegação GPS
 
 ## Resumo
 
-Integrar o Google Maps real na seção de localizações das academias, substituindo o mapa simulado por um mapa interativo com marcadores dinâmicos mostrando a localização de cada academia.
+Duas melhorias na seção de academias:
+1. Marcadores customizados no mapa com o visual da marca WEMOVELT (gradiente laranja-vermelho + ícone)
+2. Botões para abrir navegação GPS externa (Google Maps ou Waze) quando uma academia é selecionada
 
 ---
 
-## Requisitos
+## Mudança 1: Marcador Personalizado WEMOVELT
 
-### API Key do Google Maps
+**Arquivo:** `src/components/GoogleMapsDisplay.tsx`
 
-Para usar o Google Maps, é necessária uma API Key do Google Cloud Platform com as seguintes APIs habilitadas:
-- Maps JavaScript API
-- Places API (opcional, para autocomplete de endereços)
-
----
-
-## Biblioteca Escolhida
-
-**`@vis.gl/react-google-maps`** - Biblioteca oficial mantida pelo Google/Vis.gl
-- Moderna e bem tipada para TypeScript
-- Suporte a React 18+
-- API simples e declarativa
-
----
-
-## Implementação
-
-### 1. Adicionar Dependência
-
-Instalar a biblioteca:
-```bash
-npm install @vis.gl/react-google-maps
-```
-
-### 2. Configurar API Key
-
-Solicitar ao usuário a API Key do Google Maps para armazenar como variável de ambiente:
-- Nome: `VITE_GOOGLE_MAPS_API_KEY`
-
-### 3. Criar Componente de Mapa
-
-**Novo arquivo:** `src/components/GoogleMapsDisplay.tsx`
+Substituir o Pin padrão por um marcador HTML customizado com o visual da marca:
 
 ```typescript
-import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-
-interface Gym {
-  id: string;
-  name: string;
-  lat: number | null;
-  lng: number | null;
-}
-
-interface Props {
-  gyms: Gym[];
-  selectedId: string | null;
-  onMarkerClick: (id: string) => void;
-}
-
-const GoogleMapsDisplay = ({ gyms, selectedId, onMarkerClick }: Props) => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  
-  // Calcular centro baseado nas academias
-  const center = useMemo(() => {
-    const validGyms = gyms.filter(g => g.lat && g.lng);
-    if (validGyms.length === 0) return { lat: -23.55, lng: -46.63 }; // SP
-    
-    const avgLat = validGyms.reduce((sum, g) => sum + g.lat!, 0) / validGyms.length;
-    const avgLng = validGyms.reduce((sum, g) => sum + g.lng!, 0) / validGyms.length;
-    return { lat: avgLat, lng: avgLng };
-  }, [gyms]);
-
-  return (
-    <APIProvider apiKey={apiKey}>
-      <Map
-        style={{ width: '100%', height: '200px' }}
-        defaultCenter={center}
-        defaultZoom={13}
-        gestureHandling="cooperative"
-        disableDefaultUI={true}
-        mapId="gym-locations"
-      >
-        {gyms.map(gym => gym.lat && gym.lng && (
-          <Marker
-            key={gym.id}
-            position={{ lat: gym.lat, lng: gym.lng }}
-            onClick={() => onMarkerClick(gym.id)}
-          />
-        ))}
-      </Map>
-    </APIProvider>
-  );
-};
+// Marcador com gradiente WEMOVELT + ícone de localização
+<AdvancedMarker key={gym.id} position={{ lat: gym.lat, lng: gym.lng }}>
+  <div className={`
+    w-10 h-10 rounded-full flex items-center justify-center 
+    shadow-lg cursor-pointer transition-transform
+    ${isSelected ? 'scale-125 ring-2 ring-white' : 'hover:scale-110'}
+  `}
+    style={{
+      background: 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)'
+    }}
+  >
+    <MapPin className="w-5 h-5 text-white" />
+  </div>
+</AdvancedMarker>
 ```
 
-### 4. Atualizar GymLocationsSection
+Visual do marcador:
+- Círculo com gradiente laranja para vermelho (cores WEMOVELT)
+- Ícone MapPin branco no centro
+- Escala maior quando selecionado (1.25x)
+- Borda branca no estado selecionado
+- Sombra para destacar do mapa
+
+---
+
+## Mudança 2: Botões de Navegação GPS
 
 **Arquivo:** `src/components/GymLocationsSection.tsx`
 
-Mudanças:
-- Importar o novo componente `GoogleMapsDisplay`
-- Substituir o mapa SVG simulado pelo Google Maps real
-- Manter fallback para caso não tenha API key configurada
-- Clicar no marcador seleciona a academia
+Quando uma academia é selecionada, exibir botões para abrir navegação externa:
 
 ```typescript
-import GoogleMapsDisplay from "./GoogleMapsDisplay";
+// Seção de navegação que aparece quando academia é selecionada
+{selectedGym && selectedGym.lat && selectedGym.lng && (
+  <div className="p-4 border-t border-border flex gap-2">
+    <Button 
+      onClick={() => openGoogleMaps(selectedGym.lat, selectedGym.lng)}
+      className="flex-1 wemovelt-gradient"
+    >
+      <Navigation size={18} />
+      Google Maps
+    </Button>
+    <Button 
+      onClick={() => openWaze(selectedGym.lat, selectedGym.lng)}
+      variant="secondary"
+      className="flex-1"
+    >
+      <Navigation size={18} />
+      Waze
+    </Button>
+  </div>
+)}
+```
 
-const GymLocationsSection = () => {
-  const { gyms, isLoading } = useGyms();
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  
-  const hasGoogleMapsKey = !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+Funções para abrir navegação:
 
-  return (
-    <section>
-      <div className="bg-card rounded-2xl overflow-hidden">
-        {/* Mapa */}
-        <div className="relative h-48 overflow-hidden">
-          {hasGoogleMapsKey ? (
-            <GoogleMapsDisplay
-              gyms={gyms}
-              selectedId={selectedLocation}
-              onMarkerClick={setSelectedLocation}
-            />
-          ) : (
-            // Fallback: mapa simulado atual
-            <SimulatedMapFallback />
-          )}
-        </div>
+```typescript
+// Abre Google Maps com destino
+const openGoogleMaps = (lat: number, lng: number) => {
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  window.open(url, '_blank');
+};
 
-        {/* Cards das academias */}
-        <div className="p-4 space-y-2">
-          {gyms.map((gym) => (
-            // ... cards existentes
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+// Abre Waze com destino
+const openWaze = (lat: number, lng: number) => {
+  const url = `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  window.open(url, '_blank');
 };
 ```
 
 ---
 
-## Funcionalidades do Mapa
+## Visual Esperado
 
-| Funcionalidade | Descrição |
-|----------------|-----------|
-| Marcadores | Pin para cada academia com coordenadas |
-| Seleção | Clicar no marcador seleciona a academia |
-| Centro automático | Mapa centraliza baseado nas academias |
-| Zoom | Ajusta automaticamente para mostrar todos os pins |
-| Estilo escuro | Tema escuro compatível com o app |
-
----
-
-## Estilo Escuro do Mapa
-
-Configurar estilos personalizados para o mapa combinar com o tema escuro do app:
-
-```typescript
-const darkMapStyles = [
-  { elementType: "geometry", stylers: [{ color: "#1a1a1a" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2a2a2a" }] },
-  // ... mais estilos
-];
-```
+| Estado | Visual |
+|--------|--------|
+| Academia não selecionada | Marcador normal (40x40px) |
+| Academia selecionada | Marcador maior (50x50px) + borda branca + botões GPS visíveis |
+| Clique em "Google Maps" | Abre app Google Maps com rota para academia |
+| Clique em "Waze" | Abre app Waze com navegação para academia |
 
 ---
 
-## Arquivos a Criar/Modificar
+## Detalhes Técnicos
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/GoogleMapsDisplay.tsx` | Criar |
-| `src/components/GymLocationsSection.tsx` | Modificar |
-| `package.json` | Adicionar dependência |
+### URLs de Navegação
 
----
+| App | URL Format |
+|-----|------------|
+| Google Maps | `https://www.google.com/maps/dir/?api=1&destination={lat},{lng}` |
+| Waze | `https://www.waze.com/ul?ll={lat},{lng}&navigate=yes` |
 
-## Fluxo de Configuração
-
-1. Usuário clica para configurar
-2. Solicita API Key do Google Maps
-3. Armazena como `VITE_GOOGLE_MAPS_API_KEY` 
-4. Mapa real aparece automaticamente
+### Comportamento Mobile
+- Em dispositivos móveis, os links abrem automaticamente os apps instalados
+- Se não tiver o app, abre no navegador
 
 ---
 
-## Resultado Esperado
+## Arquivos a Modificar
 
-- Mapa interativo real do Google Maps
-- Marcadores nas localizações das academias
-- Integração visual com tema escuro
-- Clicar no marcador seleciona a academia correspondente
-- Fallback gracioso se não houver API key
+| Arquivo | Mudanças |
+|---------|----------|
+| `src/components/GoogleMapsDisplay.tsx` | Substituir Pin por marcador HTML customizado |
+| `src/components/GymLocationsSection.tsx` | Adicionar botões de navegação GPS |
