@@ -208,20 +208,20 @@ SELECT id, name, gym_id FROM equipment;
 ## Checklist de Lancamento
 
 ```text
-[ ] Resolver politica RLS em notifications
-[ ] Habilitar leaked password protection
-[ ] Implementar ErrorBoundary
-[ ] Completar meta tags e SEO
-[ ] Criar paginas de Termos e Privacidade
-[ ] Vincular equipamentos a academias
+[x] Resolver politica RLS em notifications
+[ ] Habilitar leaked password protection (requer config manual)
+[x] Implementar ErrorBoundary
+[x] Completar meta tags e SEO
+[x] Criar paginas de Termos e Privacidade
+[ ] Vincular equipamentos a academias (dados de seed)
 [ ] Popular dados de equipamentos (imagens, videos)
-[ ] Remover ou condicionar console.logs
-[ ] Implementar DailyWorkout com dados reais
-[ ] Funcionalizar ou remover SettingsModal
+[x] Logger condicional implementado
+[x] Implementar DailyWorkout com dados reais
+[x] Funcionalizar SettingsModal
 [ ] Testar fluxo completo de check-in (QR e Geo)
 [ ] Testar notificacoes (curtir/comentar)
 [ ] Testar criacao de treino e execucao
-[ ] Estilizar pagina 404
+[x] Estilizar pagina 404
 [ ] Configurar dominio customizado
 [ ] Publicar app
 ```
