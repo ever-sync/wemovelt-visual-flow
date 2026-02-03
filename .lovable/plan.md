@@ -1,453 +1,238 @@
 
-# Fase 3: Sistema de Treinos
+# Fase 4: Check-in Real - Completar Migracao para Banco de Dados
 
 ## Resumo
 
-Esta fase transforma o sistema de treinos de dados estaticos para uma solucao completa baseada em banco de dados, incluindo:
-- Biblioteca de equipamentos carregada do banco de dados
-- Videos demonstrativos reais (YouTube embeds)
-- CRUD completo de treinos personalizados
-- Historico e estatisticas de treinos realizados
+A Fase 4 esta parcialmente implementada. O frontend de QR Scanner e Geolocalizacao ja funciona, mas os check-ins estao sendo salvos em **localStorage** em vez do banco de dados. Esta fase completa a migracao para persistencia real.
 
 ---
 
-## 1. Novas Tabelas no Banco de Dados
+## Estado Atual
 
-### 1.1 Tabela: workouts (Treinos do Usuario)
-
-```sql
-CREATE TABLE public.workouts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  objective TEXT, -- fat_loss, muscle_gain, health, strength
-  frequency INTEGER, -- dias por semana
-  difficulty TEXT, -- beginner, intermediate, advanced
-  is_template BOOLEAN DEFAULT false, -- treino pre-definido
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS policies
-ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own workouts"
-ON public.workouts FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own workouts"
-ON public.workouts FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own workouts"
-ON public.workouts FOR UPDATE
-TO authenticated
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own workouts"
-ON public.workouts FOR DELETE
-TO authenticated
-USING (auth.uid() = user_id);
-```
-
-### 1.2 Tabela: workout_exercises (Exercicios de um Treino)
-
-```sql
-CREATE TABLE public.workout_exercises (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  workout_id UUID NOT NULL REFERENCES public.workouts(id) ON DELETE CASCADE,
-  equipment_id UUID REFERENCES public.equipment(id),
-  name TEXT NOT NULL,
-  sets INTEGER DEFAULT 3,
-  reps TEXT DEFAULT '12', -- pode ser "12" ou "8-12"
-  rest_seconds INTEGER DEFAULT 60,
-  notes TEXT,
-  order_index INTEGER NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS (herda do workout via join)
-ALTER TABLE public.workout_exercises ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage exercises via workout"
-ON public.workout_exercises FOR ALL
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.workouts w 
-    WHERE w.id = workout_id AND w.user_id = auth.uid()
-  )
-);
-```
-
-### 1.3 Tabela: workout_sessions (Treinos Realizados)
-
-```sql
-CREATE TABLE public.workout_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  workout_id UUID REFERENCES public.workouts(id) ON DELETE SET NULL,
-  workout_name TEXT NOT NULL, -- denormalizado para historico
-  started_at TIMESTAMPTZ DEFAULT now(),
-  finished_at TIMESTAMPTZ,
-  duration_minutes INTEGER,
-  exercises_completed INTEGER DEFAULT 0,
-  total_exercises INTEGER,
-  status TEXT DEFAULT 'in_progress', -- in_progress, completed, abandoned
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS
-ALTER TABLE public.workout_sessions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own sessions"
-ON public.workout_sessions FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own sessions"
-ON public.workout_sessions FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own sessions"
-ON public.workout_sessions FOR UPDATE
-TO authenticated
-USING (auth.uid() = user_id);
-```
-
-### 1.4 Adicionar campos a tabela equipment
-
-A tabela `equipment` ja existe com os campos necessarios (`video_url`, `description`, `muscles`, `difficulty`, `category`). Precisamos apenas popular com dados reais.
+| Componente | Status | Problema |
+|------------|--------|----------|
+| QR Scanner UI | OK | Funcionando |
+| Geolocalizacao UI | OK | Funcionando |
+| Tabela `check_ins` no banco | OK | Criada com RLS |
+| Tabela `gyms` no banco | OK | Populada com 5 academias |
+| Hook `useCheckIn` | Parcial | Usa localStorage, nao banco |
+| Validacao de academia | Problema | Usa arquivo estatico `src/data/gyms.ts` |
+| Validacao de QR | Problema | Usa IDs do arquivo estatico |
 
 ---
 
-## 2. Dados Iniciais dos Equipamentos
+## O Que Precisa Ser Feito
 
-Inserir equipamentos com videos do YouTube:
+### 1. Criar Hook para Academias do Banco
 
-```sql
-INSERT INTO public.equipment (name, muscles, category, difficulty, description, video_url, image_url) VALUES
-('Supino Reto', ARRAY['Peitoral', 'Triceps', 'Deltoides'], 'peito', 'intermediate', 
- 'Exercicio fundamental para desenvolvimento do peitoral.', 
- 'https://www.youtube.com/embed/rT7DgCr-3pg', 
- 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400'),
+Arquivo: `src/hooks/useGyms.ts`
 
-('Leg Press', ARRAY['Quadriceps', 'Gluteos', 'Isquiotibiais'], 'pernas', 'beginner',
- 'Exercicio de pernas em maquina guiada, seguro para iniciantes.',
- 'https://www.youtube.com/embed/IZxyjW7MPJQ',
- 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400'),
+Funcionalidades:
+- Carregar academias do banco de dados (tabela `gyms`)
+- Buscar academia por ID
+- Encontrar academia mais proxima por coordenadas
 
--- ... mais equipamentos
+```text
+useGyms()
+  |
+  +-> gyms: Gym[] (do banco)
+  +-> getGymById(id: string): Gym | undefined
+  +-> getNearestGym(lat, lng): { gym, distance }
+  +-> isLoading: boolean
 ```
+
+### 2. Atualizar geoValidation.ts
+
+Remover dependencia do arquivo estatico e aceitar lista de academias como parametro:
+
+```text
+ANTES:
+import { GYMS } from "@/data/gyms"
+validateGeoLocation(position) // usa GYMS estatico
+
+DEPOIS:
+validateGeoLocation(position, gyms) // recebe academias do banco
+```
+
+### 3. Atualizar qrValidation.ts
+
+Criar funcao assincrona que valida QR Code contra o banco:
+
+```text
+ANTES:
+validateQRCode(data) // síncrono, usa arquivo estatico
+
+DEPOIS:
+validateQRCodeAsync(data, gyms, equipment) // recebe dados do banco
+```
+
+Formato do QR Code atualizado para usar UUIDs:
+```
+wemovelt://gym/{uuid}/equipment/{uuid}
+```
+
+### 4. Refatorar Hook useCheckIn
+
+Migrar de localStorage para Supabase:
+
+```text
+useCheckIn()
+  |
+  +-> checkIns: CheckIn[] (do banco)
+  +-> registerCheckIn(method, gymId, equipmentId, lat?, lng?)
+  |     |
+  |     +-> INSERT no banco de dados
+  |     +-> Vincula ao user_id autenticado
+  |
+  +-> streak, weeklyPercentage (calculados do banco)
+  +-> isLoading, error
+```
+
+### 5. Atualizar useGeolocation
+
+Modificar para usar academias do banco em vez de arquivo estatico:
+
+```text
+ANTES:
+const result = validateGeoLocation(geoPos); // usa GYMS estatico
+
+DEPOIS:
+const { gyms } = useGyms();
+const result = validateGeoLocation(geoPos, gyms); // usa banco
+```
+
+### 6. Atualizar CheckInModal
+
+Integrar com os hooks refatorados:
+- Usar `useGyms` para validacao
+- Passar dados corretos para `registerCheckIn`
+- Salvar coordenadas (lat/lng) quando usar geolocalizacao
 
 ---
 
-## 3. Novos Hooks
+## Arquivos a Criar
 
-### 3.1 Hook: useEquipment
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/hooks/useGyms.ts` | Hook para carregar academias do banco |
 
-Arquivo: `src/hooks/useEquipment.ts`
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Mudancas |
+|---------|----------|
+| `src/hooks/useCheckIn.ts` | Migrar de localStorage para Supabase |
+| `src/hooks/useGeolocation.ts` | Usar academias do banco |
+| `src/utils/geoValidation.ts` | Aceitar lista de academias como parametro |
+| `src/utils/qrValidation.ts` | Aceitar dados do banco como parametro |
+| `src/components/modals/CheckInModal.tsx` | Integrar com novos hooks |
+
+---
+
+## Detalhes Tecnicos
+
+### Novo Hook useGyms
 
 ```typescript
-// Carregar equipamentos do banco de dados
-const useEquipment = () => {
-  const { data, isLoading } = useQuery({
-    queryKey: ['equipment'],
+// Carregar academias do banco com coordenadas
+const useGyms = () => {
+  return useQuery({
+    queryKey: ['gyms'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('equipment')
-        .select('*')
-        .order('name');
+        .from('gyms')
+        .select('id, name, address, lat, lng, radius, image_url');
       if (error) throw error;
       return data;
     }
   });
-  
-  return { equipment: data, isLoading };
 };
 ```
 
-### 3.2 Hook: useWorkouts
-
-Arquivo: `src/hooks/useWorkouts.ts`
-
-Funcionalidades:
-- Listar treinos do usuario
-- Criar novo treino
-- Atualizar treino
-- Deletar treino
-- Duplicar treino
+### Novo registerCheckIn com Supabase
 
 ```typescript
-interface UseWorkoutsReturn {
-  workouts: Workout[];
-  isLoading: boolean;
-  createWorkout: (data: CreateWorkoutInput) => Promise<Workout>;
-  updateWorkout: (id: string, data: UpdateWorkoutInput) => Promise<void>;
-  deleteWorkout: (id: string) => Promise<void>;
-  duplicateWorkout: (id: string) => Promise<Workout>;
-}
-```
+const registerCheckIn = async (
+  method: "qr" | "geo",
+  gymId: string,
+  equipmentId?: string,
+  lat?: number,
+  lng?: number
+) => {
+  const { data, error } = await supabase
+    .from('check_ins')
+    .insert({
+      user_id: user.id, // do contexto de auth
+      gym_id: gymId,
+      equipment_id: equipmentId,
+      method,
+      lat,
+      lng
+    })
+    .select()
+    .single();
 
-### 3.3 Hook: useWorkoutSessions
-
-Arquivo: `src/hooks/useWorkoutSessions.ts`
-
-Funcionalidades:
-- Iniciar sessao de treino
-- Finalizar sessao
-- Historico de sessoes
-- Estatisticas
-
-```typescript
-interface UseWorkoutSessionsReturn {
-  sessions: WorkoutSession[];
-  currentSession: WorkoutSession | null;
-  startSession: (workoutId: string) => Promise<void>;
-  completeSession: (notes?: string) => Promise<void>;
-  abandonSession: () => Promise<void>;
-  getStats: () => WorkoutStats;
-}
-```
-
----
-
-## 4. Componentes Atualizados
-
-### 4.1 Treinos.tsx
-
-Mudancas:
-- Carregar equipamentos via `useEquipment` em vez de dados estaticos
-- Exibir loading skeleton enquanto carrega
-- Filtro por categoria de equipamento
-
-```text
-+------------------------+
-|  [Meus Treinos] [Dia]  |
-|  [+ Criar Treino]      |
-+------------------------+
-| Filtros: [Todos] [Peito] [Pernas] ...
-+------------------------+
-|  EQUIPAMENTOS          |
-|  +------+ +------+     |
-|  |Supino| |LegPrs|     |
-|  +------+ +------+     |
-+------------------------+
-```
-
-### 4.2 EquipmentModal.tsx
-
-Mudancas:
-- Exibir video real do YouTube (iframe embed)
-- Carregar instrucoes e dicas do banco de dados
-- Mostrar exercicios relacionados
-
-```text
-+------------------------+
-|  [VIDEO YOUTUBE EMBED] |
-|                        |
-+------------------------+
-|  Supino Reto           |
-|  Peito, Triceps        |
-|                        |
-|  > Como executar       |
-|  > Dicas importantes   |
-|                        |
-|  [Adicionar ao Treino] |
-+------------------------+
-```
-
-### 4.3 MyWorkoutsModal.tsx (Refatorado)
-
-Mudancas:
-- Carregar treinos do usuario do banco
-- Exibir sessoes recentes (historico)
-- Permitir iniciar treino
-- Permitir editar/deletar treino
-
-### 4.4 CreateWorkoutModal.tsx (Refatorado)
-
-Mudancas:
-- Salvar treino no banco de dados
-- Adicionar etapa para selecionar exercicios
-- Permitir reordenar exercicios
-- Definir series/repeticoes por exercicio
-
-Novo fluxo:
-1. Objetivo (existente)
-2. Nivel (existente)
-3. Frequencia (existente)
-4. **NOVO: Selecionar exercicios**
-5. **NOVO: Configurar series/reps**
-6. Confirmar e salvar
-
-### 4.5 Novo: WorkoutPlayerModal.tsx
-
-Modal para executar um treino:
-
-```text
-+------------------------+
-|  Treino de Peito       |
-|  Exercicio 2 de 6      |
-+------------------------+
-|                        |
-|  [VIDEO DO EXERCICIO]  |
-|                        |
-+------------------------+
-|  Supino Reto           |
-|  3 series x 12 reps    |
-|  Descanso: 60s         |
-|                        |
-|  [ ] Serie 1 concluida |
-|  [ ] Serie 2 concluida |
-|  [ ] Serie 3 concluida |
-|                        |
-|  [< Anterior] [Proximo >]
-+------------------------+
-|  [Timer: 00:45:32]     |
-|  [Finalizar Treino]    |
-+------------------------+
-```
-
----
-
-## 5. Novo Componente: WorkoutStats
-
-Arquivo: `src/components/WorkoutStats.tsx`
-
-Exibe estatisticas do usuario:
-- Total de treinos realizados
-- Tempo total de treino
-- Media de duracao
-- Treinos por semana
-- Grupo muscular mais treinado
-
-```text
-+------------------------+
-|  Suas Estatisticas     |
-+------------------------+
-| Treinos: 47   Horas: 35|
-| Media: 45min  Sem: 3x  |
-+------------------------+
-| Grupo mais treinado:   |
-| [=======] Peito (28%)  |
-| [=====] Pernas (22%)   |
-| [====] Costas (18%)    |
-+------------------------+
-```
-
----
-
-## 6. Arquivos a Criar
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/hooks/useEquipment.ts` | Hook para carregar equipamentos do banco |
-| `src/hooks/useWorkouts.ts` | CRUD de treinos do usuario |
-| `src/hooks/useWorkoutSessions.ts` | Gerenciar sessoes de treino |
-| `src/components/modals/WorkoutPlayerModal.tsx` | Modal para executar treino |
-| `src/components/modals/EditWorkoutModal.tsx` | Modal para editar treino |
-| `src/components/WorkoutStats.tsx` | Componente de estatisticas |
-| `src/components/ExerciseSelector.tsx` | Seletor de exercicios para criar treino |
-
----
-
-## 7. Arquivos a Modificar
-
-| Arquivo | Mudancas |
-|---------|----------|
-| `src/pages/Treinos.tsx` | Usar hook useEquipment, adicionar filtros |
-| `src/components/modals/EquipmentModal.tsx` | Video YouTube, dados do banco |
-| `src/components/modals/MyWorkoutsModal.tsx` | Carregar do banco, CRUD |
-| `src/components/modals/CreateWorkoutModal.tsx` | Salvar no banco, selecao de exercicios |
-| `src/components/modals/DailyWorkoutModal.tsx` | Carregar treino real do dia |
-
----
-
-## 8. Integracao de Video do YouTube
-
-Para exibir videos de forma segura, usar iframe embed:
-
-```tsx
-const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
-  // Converte URL normal para embed
-  const embedUrl = videoUrl.includes('embed') 
-    ? videoUrl 
-    : videoUrl.replace('watch?v=', 'embed/');
-  
-  return (
-    <div className="aspect-video">
-      <iframe
-        src={embedUrl}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="w-full h-full rounded-xl"
-      />
-    </div>
-  );
+  if (error) throw error;
+  return data;
 };
 ```
 
----
+### Calculo de Streak do Banco
 
-## 9. Fluxo de Execucao de Treino
-
-```text
-Usuario clica "Iniciar Treino"
-         |
-         v
-+------------------+
-| Criar session    | --> INSERT workout_sessions (status: in_progress)
-| started_at = now |
-+------------------+
-         |
-         v
-+------------------+
-| WorkoutPlayer    | --> Exibe exercicios um a um
-| Modal            |     Timer rodando
-+------------------+
-         |
-    [Cada serie completa]
-         |
-         v
-+------------------+
-| Atualizar progresso (local state)
-+------------------+
-         |
-    [Usuario finaliza]
-         |
-         v
-+------------------+
-| UPDATE session   | --> finished_at, duration, status: completed
-+------------------+
-         |
-         v
-+------------------+
-| Toast sucesso    |
-| Atualizar stats  |
-+------------------+
+```sql
+-- Exemplo de query para calcular streak
+SELECT DISTINCT DATE(created_at) as check_date
+FROM check_ins
+WHERE user_id = $1
+ORDER BY check_date DESC
 ```
 
 ---
 
-## 10. Ordem de Implementacao
+## Fluxo Atualizado
 
-1. **Migracao SQL**: Criar tabelas workouts, workout_exercises, workout_sessions
-2. **Dados equipamentos**: Popular tabela equipment com dados reais e videos
-3. **Hook useEquipment**: Carregar equipamentos do banco
-4. **Treinos.tsx**: Integrar com useEquipment, adicionar loading/filtros
-5. **EquipmentModal**: Integrar video YouTube e dados reais
-6. **Hook useWorkouts**: CRUD de treinos
-7. **CreateWorkoutModal**: Refatorar para salvar no banco
-8. **Hook useWorkoutSessions**: Gerenciar sessoes
-9. **WorkoutPlayerModal**: Criar modal de execucao
-10. **MyWorkoutsModal**: Integrar com hooks, exibir historico
-11. **WorkoutStats**: Componente de estatisticas
+```text
+Usuario abre CheckInModal
+         |
+    [Escolhe metodo]
+         |
+   +-----+-----+
+   |           |
+   v           v
+QR Scan    Geolocalizacao
+   |           |
+   v           v
+Valida QR   Busca academias
+(banco)     (banco)
+   |           |
+   v           v
+Encontra    Calcula distancia
+gym + equip   da mais proxima
+   |           |
+   +-----+-----+
+         |
+         v
+   INSERT check_ins
+   (com user_id)
+         |
+         v
+   Atualiza streak
+   (query do banco)
+         |
+         v
+   Exibe sucesso
+```
+
+---
+
+## Consideracoes de Seguranca
+
+1. **RLS ja configurado**: A tabela `check_ins` ja tem politicas que garantem que usuarios so veem/inserem seus proprios check-ins
+
+2. **Autenticacao obrigatoria**: O hook `useCheckIn` deve verificar se ha usuario logado antes de registrar
+
+3. **Validacao server-side**: O QR Code e validado localmente, mas a insercao no banco garante integridade referencial
 
 ---
 
@@ -455,10 +240,9 @@ Usuario clica "Iniciar Treino"
 
 Apos implementacao:
 
-1. Equipamentos carregados dinamicamente do banco de dados
-2. Videos reais do YouTube nos detalhes de cada equipamento
-3. Usuarios podem criar, editar e deletar treinos personalizados
-4. Sistema de execucao de treino com timer e progresso
-5. Historico completo de todos os treinos realizados
-6. Estatisticas detalhadas de desempenho
+1. Check-ins persistem no banco de dados (nao mais localStorage)
+2. Dados sincronizam entre dispositivos do mesmo usuario
+3. Streak e percentual semanal calculados do banco
+4. Validacao de QR/Geo usa academias reais do banco
+5. Historico completo de check-ins disponivel para estatisticas futuras
 
