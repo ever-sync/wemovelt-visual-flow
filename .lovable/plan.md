@@ -1,61 +1,84 @@
 
-
-# Plano: Corrigir Contador de Hábitos Completados
+# Plano: Corrigir Visualizacao de Nome e Foto na Timeline
 
 ## Problema Identificado
 
-O contador "0/4 hábitos hoje" no hero não está atualizando quando os hábitos são marcados como completos.
+A view `profiles_public` foi criada com `security_invoker=on`, o que faz com que ela herde as politicas RLS da tabela base `profiles`. Como a tabela profiles tem a politica:
 
-### Causa Raiz
-
-O cálculo atual usa uma lógica incorreta:
-
-```typescript
-// Código atual (INCORRETO)
-const totalCompletedToday = weeklyStats.reduce((acc, stat) => {
-  const todayData = stat.weeklyData[stat.weeklyData.length - 1]; // Assume último = hoje
-  return acc + (todayData?.completed ? 1 : 0);
-}, 0);
+```sql
+"Users can view own profile" - USING (auth.uid() = id)
 ```
 
-O `weeklyData` é um array fixo de 7 dias (Seg-Dom). O índice 6 sempre é domingo, não o dia atual. Se hoje é segunda-feira, o código verifica domingo em vez de segunda.
+Quando um usuario tenta ver o perfil de **outro** usuario na timeline, a consulta retorna vazio porque a RLS bloqueia o acesso.
+
+### Evidencia
+
+Requisicao na timeline:
+```
+GET profiles_public?id=in.(0621ecca-bc12-4c59-aa23-f316337f9d65)
+Response: [] (vazio)
+```
+
+Mas os dados existem:
+```
+SELECT * FROM profiles_public → 3 registros encontrados
+```
+
+A diferenca e que a query de debug usa service role (bypassa RLS), enquanto o frontend usa anon key (respeita RLS).
 
 ---
 
-## Solução
+## Solucao
 
-Usar a função `isHabitCompleted` que já existe no hook `useHabits`, que verifica corretamente os logs de **hoje** (`todayLogs`).
+Recriar a view `profiles_public` **SEM** `security_invoker` para que ela seja acessivel publicamente, ja que contem apenas dados nao sensiveis (nome, username, avatar).
 
-### Código Corrigido
+### SQL Necessario
 
-```typescript
-// Código corrigido (CORRETO)
-const { weeklyStats, isLoading, isHabitCompleted } = useHabits();
+```sql
+-- Remover a view existente
+DROP VIEW IF EXISTS public.profiles_public;
 
-const totalCompletedToday = [
-  "hydration", 
-  "sleep", 
-  "nutrition", 
-  "wellness"
-].filter(type => isHabitCompleted(type)).length;
+-- Recriar sem security_invoker (usa SECURITY DEFINER por padrao)
+CREATE VIEW public.profiles_public AS
+SELECT 
+  id,
+  name,
+  username,
+  avatar_url
+FROM public.profiles;
+
+-- Garantir que usuarios autenticados possam acessar
+GRANT SELECT ON public.profiles_public TO authenticated;
+GRANT SELECT ON public.profiles_public TO anon;
 ```
 
 ---
 
-## Mudanças Necessárias
+## Por que e Seguro
 
-| Arquivo | Mudança |
-|---------|---------|
-| `src/pages/Habitos.tsx` | Usar `isHabitCompleted` ao invés de `weeklyStats` para calcular hábitos do dia |
+A view `profiles_public` expoe apenas:
+- `id` - UUID publico
+- `name` - Nome de exibicao
+- `username` - Handle publico
+- `avatar_url` - URL da foto
+
+Dados sensiveis como `weight`, `age`, `height`, `goal` permanecem protegidos na tabela `profiles` original.
 
 ---
 
-## Por que funciona
+## Resultado Esperado
 
-A função `isHabitCompleted` usa `todayLogs` que:
-1. Filtra logs pela data de **hoje** (`format(new Date(), "yyyy-MM-dd")`)
-2. Verifica se o log tem `completed: true`
-3. É atualizada em tempo real após cada toggle
+Apos a correcao:
+- Timeline mostra nome e foto de todos os usuarios
+- Card de post exibe avatar ou inicial
+- Dados sensiveis continuam protegidos
 
-Enquanto `weeklyStats.weeklyData` usa índices fixos da semana que não correspondem ao dia atual.
+---
+
+## Arquivos Impactados
+
+| Tipo | Acao |
+|------|------|
+| Database View | Recriar `profiles_public` sem security_invoker |
+| Codigo | Nenhuma alteracao necessaria |
 
