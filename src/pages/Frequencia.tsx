@@ -1,7 +1,7 @@
 import Header from "@/components/layout/Header";
 import BottomNav from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
-import { MapPin, Target, Check, X, Trophy, Flame, Plus } from "lucide-react";
+import { MapPin, Target, Check, Trophy, Flame, Plus } from "lucide-react";
 import { useState } from "react";
 import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
@@ -66,12 +66,9 @@ const Frequencia = () => {
                   <span className="text-xs text-muted-foreground">{day}</span>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
                     checked === true ? "wemovelt-gradient" :
-                    checked === false ? "bg-destructive/20 text-destructive" :
                     "bg-secondary text-muted-foreground"
                   }`}>
-                    {checked === true ? <Check size={20} /> :
-                     checked === false ? <X size={20} /> :
-                     date}
+                    {checked === true ? <Check size={20} /> : date}
                   </div>
                 </div>
               ))}

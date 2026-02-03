@@ -1,7 +1,7 @@
 import Header from "@/components/layout/Header";
 import BottomNav from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Play, MapPin, Check, X, Target } from "lucide-react";
+import { Play, MapPin, Check, Target } from "lucide-react";
 import { useState, useEffect } from "react";
 import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
@@ -72,16 +72,14 @@ const Home = () => {
           <div className="bg-card rounded-2xl p-4">
             {/* Week days - now using real data */}
             <div className="flex justify-between mb-4">
-              {weekData.map(({ day, checked }) => (
+              {weekData.map(({ day, date, checked }) => (
                 <div key={day} className="flex flex-col items-center gap-1">
                   <span className="text-xs text-muted-foreground">{day}</span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    checked === true ? "bg-success" :
-                    checked === false ? "bg-destructive" :
-                    "bg-secondary"
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    checked === true ? "wemovelt-gradient" :
+                    "bg-secondary text-muted-foreground"
                   }`}>
-                    {checked === true && <Check size={16} />}
-                    {checked === false && <X size={16} />}
+                    {checked === true ? <Check size={16} /> : date}
                   </div>
                 </div>
               ))}
