@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { HelpCircle, MessageCircle } from "lucide-react";
+import { HelpCircle, MessageCircle, Download, Smartphone, Check } from "lucide-react";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { Badge } from "@/components/ui/badge";
 
 interface HelpModalProps {
   open: boolean;
@@ -35,12 +37,18 @@ const faqs = [
 ];
 
 const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
+  const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
+
   const handleWhatsAppPersonal = () => {
     window.open("https://wa.me/5511952130972?text=Olá! Gostaria de falar com um personal do WEMOVELT", "_blank");
   };
 
   const handleWhatsAppSupport = () => {
     window.open("https://wa.me/5511952130972?text=Olá! Preciso de ajuda com o app WEMOVELT", "_blank");
+  };
+
+  const handleInstall = async () => {
+    await promptInstall();
   };
 
   return (
@@ -70,6 +78,40 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
               </AccordionItem>
             ))}
           </Accordion>
+
+          {/* PWA Install Section */}
+          <div className="space-y-2">
+            {isInstalled ? (
+              <div className="flex items-center justify-center gap-2 py-3 px-4 bg-secondary rounded-xl">
+                <Check className="text-green-500" size={20} />
+                <span className="text-sm font-medium text-muted-foreground">App instalado no seu dispositivo</span>
+              </div>
+            ) : canInstall ? (
+              <button
+                onClick={handleInstall}
+                className="w-full flex items-center justify-center gap-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors"
+              >
+                <Download size={24} />
+                Instalar no celular
+              </button>
+            ) : isIOS ? (
+              <div className="bg-secondary rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Smartphone size={20} className="text-primary" />
+                  Instalar no iPhone
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Toque em <strong>Compartilhar</strong> (ícone de seta) e depois em <strong>"Adicionar à Tela de Início"</strong>
+                </p>
+              </div>
+            ) : null}
+            
+            {(canInstall || isIOS) && !isInstalled && (
+              <p className="text-center text-xs text-muted-foreground">
+                Adicione o WEMOVELT à tela inicial do seu celular
+              </p>
+            )}
+          </div>
 
           {/* WhatsApp Buttons */}
           <div className="space-y-3">
