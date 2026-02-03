@@ -1,13 +1,14 @@
 
-# Fase 6: Comunidade
+# Fase 7: Habitos e Metas
 
 ## Resumo
 
-Esta fase transforma a pagina de comunidade de dados estaticos para um sistema completo com banco de dados, incluindo:
-- Posts com upload de imagens
-- Sistema de curtidas em tempo real
-- Comentarios aninhados
-- Feed paginado com scroll infinito
+Esta fase transforma o sistema de habitos e metas de dados estaticos para uma solucao completa baseada em banco de dados, incluindo:
+- Rastreamento diario de habitos com check/uncheck
+- Sistema de metas semanais persistentes
+- Graficos de progresso usando Recharts
+- Calendario de atividades
+- Estatisticas e historico
 
 ---
 
@@ -15,499 +16,531 @@ Esta fase transforma a pagina de comunidade de dados estaticos para um sistema c
 
 | Componente | Status | Problema |
 |------------|--------|----------|
-| Comunidade.tsx | Estatico | Posts hardcoded no codigo |
-| PostModal.tsx | UI apenas | Nao salva no banco |
-| Upload de imagens | Nao implementado | Botoes sem funcionalidade |
-| Curtidas | Local | Usa useState, nao persiste |
-| Comentarios | Placeholder | Exibe toast "Em breve" |
+| Habitos.tsx | Estatico | Categorias hardcoded, sem rastreamento |
+| HabitModal.tsx | UI apenas | Exibe dicas, nao permite marcar como feito |
+| GoalModal.tsx | UI apenas | Nao salva meta no banco |
+| Frequencia.tsx | Parcial | Metas hardcoded, estatisticas falsas |
+| Graficos | Nao existe | Nenhum grafico de progresso implementado |
 
 ---
 
 ## 1. Novas Tabelas no Banco de Dados
 
-### 1.1 Tabela: posts
+### 1.1 Tabela: user_goals (Metas do Usuario)
 
 ```sql
-CREATE TABLE public.posts (
+CREATE TABLE public.user_goals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  image_url TEXT,
-  likes_count INTEGER DEFAULT 0,
-  comments_count INTEGER DEFAULT 0,
+  type TEXT NOT NULL, -- 'workout', 'hydration', 'sleep', 'nutrition', 'wellness'
+  target INTEGER NOT NULL, -- valor alvo (ex: 4 treinos, 2000ml agua)
+  unit TEXT NOT NULL, -- 'times_per_week', 'ml_per_day', 'hours_per_day'
+  title TEXT NOT NULL, -- 'Treinar 4x/semana'
+  is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- RLS policies
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_goals ENABLE ROW LEVEL SECURITY;
 
--- Qualquer autenticado pode ver posts
-CREATE POLICY "Anyone authenticated can view posts"
-ON public.posts FOR SELECT
-TO authenticated
-USING (true);
-
--- Usuario pode inserir proprio post
-CREATE POLICY "Users can insert own posts"
-ON public.posts FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
--- Usuario pode atualizar proprio post
-CREATE POLICY "Users can update own posts"
-ON public.posts FOR UPDATE
+CREATE POLICY "Users can view own goals"
+ON public.user_goals FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
--- Usuario pode deletar proprio post
-CREATE POLICY "Users can delete own posts"
-ON public.posts FOR DELETE
+CREATE POLICY "Users can insert own goals"
+ON public.user_goals FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own goals"
+ON public.user_goals FOR UPDATE
+TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own goals"
+ON public.user_goals FOR DELETE
 TO authenticated
 USING (auth.uid() = user_id);
 ```
 
-### 1.2 Tabela: post_likes
+### 1.2 Tabela: habit_logs (Registro Diario de Habitos)
 
 ```sql
-CREATE TABLE public.post_likes (
+CREATE TABLE public.habit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  habit_type TEXT NOT NULL, -- 'hydration', 'sleep', 'nutrition', 'wellness'
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  value INTEGER, -- valor numerico (ml de agua, horas de sono, etc)
+  completed BOOLEAN DEFAULT false, -- marcado como concluido
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(post_id, user_id) -- Evita curtidas duplicadas
+  UNIQUE(user_id, habit_type, date) -- Um registro por habito por dia
 );
 
-ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+-- RLS policies
+ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
 
--- Qualquer autenticado pode ver curtidas
-CREATE POLICY "Anyone authenticated can view likes"
-ON public.post_likes FOR SELECT
+CREATE POLICY "Users can view own habit logs"
+ON public.habit_logs FOR SELECT
 TO authenticated
-USING (true);
+USING (auth.uid() = user_id);
 
--- Usuario pode inserir propria curtida
-CREATE POLICY "Users can insert own likes"
-ON public.post_likes FOR INSERT
+CREATE POLICY "Users can insert own habit logs"
+ON public.habit_logs FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
--- Usuario pode remover propria curtida
-CREATE POLICY "Users can delete own likes"
-ON public.post_likes FOR DELETE
+CREATE POLICY "Users can update own habit logs"
+ON public.habit_logs FOR UPDATE
+TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own habit logs"
+ON public.habit_logs FOR DELETE
 TO authenticated
 USING (auth.uid() = user_id);
 ```
 
-### 1.3 Tabela: post_comments
-
-```sql
-CREATE TABLE public.post_comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  parent_id UUID REFERENCES public.post_comments(id) ON DELETE CASCADE, -- Para respostas
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
-
--- Qualquer autenticado pode ver comentarios
-CREATE POLICY "Anyone authenticated can view comments"
-ON public.post_comments FOR SELECT
-TO authenticated
-USING (true);
-
--- Usuario pode inserir proprio comentario
-CREATE POLICY "Users can insert own comments"
-ON public.post_comments FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
--- Usuario pode deletar proprio comentario
-CREATE POLICY "Users can delete own comments"
-ON public.post_comments FOR DELETE
-TO authenticated
-USING (auth.uid() = user_id);
-```
-
-### 1.4 Trigger para atualizar contadores
-
-```sql
--- Funcao para atualizar likes_count
-CREATE OR REPLACE FUNCTION update_post_likes_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE posts SET likes_count = likes_count - 1 WHERE id = OLD.post_id;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_post_like_change
-AFTER INSERT OR DELETE ON post_likes
-FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
-
--- Funcao para atualizar comments_count
-CREATE OR REPLACE FUNCTION update_post_comments_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE posts SET comments_count = comments_count - 1 WHERE id = OLD.post_id;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_post_comment_change
-AFTER INSERT OR DELETE ON post_comments
-FOR EACH ROW EXECUTE FUNCTION update_post_comments_count();
-```
-
 ---
 
-## 2. Storage para Imagens de Posts
+## 2. Novos Hooks
 
-### Migracao SQL
+### 2.1 Hook: useGoals
 
-```sql
--- Criar bucket para imagens de posts
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('post-images', 'post-images', true);
-
--- Politica: usuarios podem fazer upload de proprias imagens
-CREATE POLICY "Users can upload post images"
-ON storage.objects
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'post-images' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Politica: usuarios podem deletar proprias imagens
-CREATE POLICY "Users can delete post images"
-ON storage.objects
-FOR DELETE
-TO authenticated
-USING (
-  bucket_id = 'post-images' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Politica: qualquer um pode visualizar imagens (bucket publico)
-CREATE POLICY "Anyone can view post images"
-ON storage.objects
-FOR SELECT
-TO public
-USING (bucket_id = 'post-images');
-```
-
----
-
-## 3. Novos Hooks
-
-### 3.1 Hook: usePosts
-
-Arquivo: `src/hooks/usePosts.ts`
+Arquivo: `src/hooks/useGoals.ts`
 
 Funcionalidades:
-- Carregar posts paginados (10 por vez)
-- Criar novo post
-- Deletar post
-- Toggle curtida
-- Verificar se usuario curtiu
+- Carregar metas ativas do usuario
+- Criar nova meta
+- Atualizar meta
+- Deletar/desativar meta
+- Calcular progresso da meta (baseado em check_ins para treino)
 
 ```text
-usePosts()
+useGoals()
   |
-  +-> posts: Post[] (com dados do autor)
-  +-> isLoading, isFetching
-  +-> hasMore: boolean
-  +-> fetchNextPage: () => void
-  |
-  +-> createPost(content, imageFile?)
-  +-> deletePost(id)
-  +-> toggleLike(postId)
-  +-> hasLiked(postId): boolean
+  +-> goals: Goal[] (metas ativas)
+  +-> isLoading, error
+  +-> createGoal(type, target, unit, title)
+  +-> updateGoal(id, updates)
+  +-> deleteGoal(id)
+  +-> getGoalProgress(goalId): { current, target, percentage }
 ```
 
-### 3.2 Hook: useComments
+### 2.2 Hook: useHabits
 
-Arquivo: `src/hooks/useComments.ts`
+Arquivo: `src/hooks/useHabits.ts`
 
 Funcionalidades:
-- Carregar comentarios de um post
-- Adicionar comentario
-- Deletar comentario
+- Carregar registros de habitos do periodo
+- Marcar/desmarcar habito do dia
+- Calcular streak por habito
+- Estatisticas semanais/mensais
 
 ```text
-useComments(postId)
+useHabits()
   |
-  +-> comments: Comment[] (com dados do autor)
-  +-> isLoading
-  +-> addComment(content, parentId?)
-  +-> deleteComment(id)
+  +-> todayLogs: HabitLog[] (habitos de hoje)
+  +-> weeklyStats: { type, completedDays, streak }[]
+  +-> toggleHabit(habitType, date?)
+  +-> updateHabitValue(habitType, value, date?)
+  +-> getHabitHistory(habitType, startDate, endDate)
 ```
 
 ---
 
-## 4. Componentes a Criar
+## 3. Componentes a Criar
 
-### 4.1 PostCard.tsx
+### 3.1 HabitTracker.tsx
 
-Componente reutilizavel para exibir um post:
+Componente para rastrear habitos diarios com checkboxes:
 
 ```text
 +------------------------+
-| [Avatar] Nome          |
-|         @usuario · 2h  |
+| HABITOS DE HOJE        |
 +------------------------+
-| Conteudo do post...    |
-|                        |
-| [  IMAGEM OPCIONAL  ]  |
-|                        |
-+------------------------+
-| ❤️ 24  💬 5  🔗 Share  |
+| [x] Hidratacao   2L    |
+| [ ] Sono         -     |
+| [x] Alimentacao  OK    |
+| [ ] Bem-estar    -     |
 +------------------------+
 ```
 
-Props:
-- post: Post
-- onLike, onComment, onShare
-- onDelete (se for autor)
+### 3.2 ProgressChart.tsx
 
-### 4.2 CommentsModal.tsx
-
-Modal para ver e adicionar comentarios:
+Componente de grafico usando Recharts:
 
 ```text
 +------------------------+
-|     Comentarios (5)    |
-+------------------------+
-| [Avatar] Maria         |
-| Muito legal! 👏        |
-|                2h      |
-+------------------------+
-| [Avatar] Joao          |
-| Parabens pelo treino!  |
-|                1h      |
-+------------------------+
-| [Escreva um comentario]|
-| [Enviar]               |
+|  Progresso Semanal     |
+|                        |
+|  ██       ██   ██      |
+|  ██  ██   ██   ██  ██  |
+|  Seg Ter  Qua  Qui Sex |
 +------------------------+
 ```
 
-### 4.3 ImageUpload.tsx
+### 3.3 HabitDetailModal.tsx
 
-Componente generico para upload de imagens (pode ser usado em PostModal):
+Modal detalhado para um habito especifico:
 
 ```text
 +------------------------+
-|                        |
-|  [  PREVIEW/DROPZONE ] |
-|                        |
+|     Hidratacao         |
 +------------------------+
-| [Remover]              |
+|  Meta: 2000ml/dia      |
+|  Hoje: 1500ml  [+250ml]|
++------------------------+
+|  HISTORICO (7 dias)    |
+|  ████████████░░░ 75%   |
++------------------------+
+|  [Grafico semanal]     |
++------------------------+
+```
+
+### 3.4 GoalProgressCard.tsx
+
+Card que mostra progresso de uma meta:
+
+```text
++------------------------+
+| Treinar 4x/semana      |
+| ████████░░░░ 3/4 (75%) |
+| Faltam 1 dia           |
++------------------------+
+```
+
+### 3.5 WeeklyOverviewChart.tsx
+
+Grafico geral da semana com todos os habitos:
+
+```text
++------------------------+
+|  Visao Semanal         |
+|                        |
+|  [Area Chart empilhado]|
+|  - Treinos (laranja)   |
+|  - Hidratacao (azul)   |
+|  - Sono (roxo)         |
 +------------------------+
 ```
 
 ---
 
-## 5. Refatorar Componentes Existentes
+## 4. Refatorar Componentes Existentes
 
-### 5.1 PostModal.tsx
+### 4.1 Habitos.tsx
 
 Mudancas:
-- Integrar com hook usePosts
-- Adicionar upload de imagem funcional
-- Exibir dados do usuario logado
-- Estado de loading durante criacao
+- Adicionar HabitTracker para marcar habitos do dia
+- Exibir streak e progresso por categoria
+- Adicionar grafico semanal de progresso
+- Integrar com hooks useHabits
 
-Novo fluxo:
-1. Usuario escreve conteudo
-2. (Opcional) Seleciona imagem
-3. Clica em Publicar
-4. Upload da imagem para storage
-5. INSERT do post com image_url
-6. Atualizar feed
+Nova estrutura:
+```text
++------------------------+
+|  HABITOS SAUDAVEIS     |
++------------------------+
+|  HOJE                  |
+|  [HabitTracker]        |
++------------------------+
+|  CATEGORIAS            |
+|  [Cards clicaveis]     |
++------------------------+
+|  PROGRESSO SEMANAL     |
+|  [ProgressChart]       |
++------------------------+
+```
 
-### 5.2 Comunidade.tsx
+### 4.2 HabitModal.tsx
 
 Mudancas:
-- Usar hook usePosts
-- Implementar scroll infinito
-- Extrair PostCard como componente
-- Integrar curtidas reais
-- Abrir CommentsModal ao clicar em comentarios
+- Adicionar botao para marcar habito como concluido
+- Exibir historico dos ultimos 7 dias
+- Mostrar streak atual do habito
+- Permitir adicionar valor (ml, horas)
+
+### 4.3 GoalModal.tsx
+
+Mudancas:
+- Salvar meta no banco de dados
+- Adicionar mais tipos de meta (agua, sono, etc)
+- Permitir definir valor customizado
+- Exibir metas existentes
+
+### 4.4 Frequencia.tsx
+
+Mudancas:
+- Carregar metas reais do banco
+- Calcular progresso baseado em dados reais
+- Adicionar graficos de progresso
+- Exibir historico mensal
 
 ---
 
-## 6. Arquivos a Criar
+## 5. Arquivos a Criar
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/hooks/usePosts.ts` | CRUD de posts com paginacao |
-| `src/hooks/useComments.ts` | CRUD de comentarios |
-| `src/components/PostCard.tsx` | Card reutilizavel de post |
-| `src/components/modals/CommentsModal.tsx` | Modal de comentarios |
-| `src/components/ImageUpload.tsx` | Upload de imagem generico |
+| `src/hooks/useGoals.ts` | CRUD de metas do usuario |
+| `src/hooks/useHabits.ts` | Rastreamento de habitos diarios |
+| `src/components/HabitTracker.tsx` | Checkboxes de habitos do dia |
+| `src/components/ProgressChart.tsx` | Grafico de barras/area |
+| `src/components/GoalProgressCard.tsx` | Card de progresso de meta |
+| `src/components/modals/HabitDetailModal.tsx` | Detalhes e historico do habito |
 
 ---
 
-## 7. Arquivos a Modificar
+## 6. Arquivos a Modificar
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/pages/Comunidade.tsx` | Integrar com hooks, scroll infinito |
-| `src/components/modals/PostModal.tsx` | Upload real, salvar no banco |
+| `src/pages/Habitos.tsx` | Integrar HabitTracker, graficos |
+| `src/pages/Frequencia.tsx` | Metas reais, graficos, historico |
+| `src/pages/Home.tsx` | Resumo de habitos do dia |
+| `src/components/modals/HabitModal.tsx` | Adicionar acao de completar |
+| `src/components/modals/GoalModal.tsx` | Salvar no banco |
 
 ---
 
-## 8. Detalhes Tecnicos
+## 7. Detalhes Tecnicos
 
-### Query com dados do autor
-
-```typescript
-const { data } = await supabase
-  .from("posts")
-  .select(`
-    *,
-    profiles:user_id (
-      id, name, username, avatar_url
-    ),
-    post_likes!inner (
-      user_id
-    )
-  `)
-  .order("created_at", { ascending: false })
-  .range(from, to);
-```
-
-### Paginacao com useInfiniteQuery
+### Query para progresso de meta de treino
 
 ```typescript
-const PAGE_SIZE = 10;
-
-const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
-  queryKey: ["posts"],
-  queryFn: async ({ pageParam = 0 }) => {
-    const from = pageParam * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    
-    const { data, error } = await supabase
-      .from("posts")
-      .select("*, profiles:user_id(*)")
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    
-    return data;
-  },
-  getNextPageParam: (lastPage, pages) => {
-    return lastPage.length === PAGE_SIZE ? pages.length : undefined;
-  },
-  initialPageParam: 0,
-});
-```
-
-### Upload de imagem de post
-
-```typescript
-const uploadPostImage = async (file: File, userId: string) => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}.${fileExt}`;
-  const filePath = `${userId}/${fileName}`;
-
-  const { error } = await supabase.storage
-    .from("post-images")
-    .upload(filePath, file);
-
-  if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("post-images")
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
+// Conta check-ins da semana atual para meta de treino
+const getWeeklyWorkoutProgress = async (userId: string) => {
+  const startOfWeek = getStartOfWeek(new Date());
+  
+  const { count } = await supabase
+    .from('check_ins')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfWeek.toISOString());
+  
+  return count || 0;
 };
 ```
 
-### Toggle de curtida
+### Estrutura do Grafico com Recharts
 
 ```typescript
-const toggleLike = async (postId: string) => {
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+
+const ProgressChart = ({ data }: { data: ChartData[] }) => (
+  <ResponsiveContainer width="100%" height={200}>
+    <BarChart data={data}>
+      <XAxis dataKey="day" tick={{ fill: '#888' }} />
+      <YAxis hide />
+      <Bar 
+        dataKey="value" 
+        fill="url(#gradient)" 
+        radius={[4, 4, 0, 0]} 
+      />
+      <defs>
+        <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E97A3A" />
+          <stop offset="100%" stopColor="#D45D24" />
+        </linearGradient>
+      </defs>
+    </BarChart>
+  </ResponsiveContainer>
+);
+```
+
+### Toggle de habito com upsert
+
+```typescript
+const toggleHabit = async (habitType: string) => {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  
+  // Verificar se ja existe registro hoje
   const { data: existing } = await supabase
-    .from("post_likes")
-    .select("id")
-    .eq("post_id", postId)
-    .eq("user_id", user.id)
+    .from('habit_logs')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('habit_type', habitType)
+    .eq('date', today)
     .single();
 
   if (existing) {
-    // Remover curtida
+    // Toggle o estado
     await supabase
-      .from("post_likes")
-      .delete()
-      .eq("id", existing.id);
+      .from('habit_logs')
+      .update({ completed: !existing.completed })
+      .eq('id', existing.id);
   } else {
-    // Adicionar curtida
+    // Criar novo registro marcado como completo
     await supabase
-      .from("post_likes")
-      .insert({ post_id: postId, user_id: user.id });
+      .from('habit_logs')
+      .insert({
+        user_id: user.id,
+        habit_type: habitType,
+        date: today,
+        completed: true
+      });
   }
+};
+```
+
+### Calculo de streak
+
+```typescript
+const calculateStreak = (logs: HabitLog[]): number => {
+  if (logs.length === 0) return 0;
+  
+  const sortedDates = [...new Set(
+    logs
+      .filter(l => l.completed)
+      .map(l => l.date)
+  )].sort().reverse();
+  
+  if (sortedDates.length === 0) return 0;
+  
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd');
+  
+  if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
+    return 0;
+  }
+  
+  let streak = 1;
+  for (let i = 1; i < sortedDates.length; i++) {
+    const diff = differenceInDays(
+      parseISO(sortedDates[i-1]), 
+      parseISO(sortedDates[i])
+    );
+    if (diff === 1) streak++;
+    else break;
+  }
+  
+  return streak;
 };
 ```
 
 ---
 
-## 9. Scroll Infinito no Feed
+## 8. Fluxo de Rastreamento de Habito
 
-Usar Intersection Observer para detectar quando usuario chega ao fim:
-
-```typescript
-const loadMoreRef = useRef<HTMLDivElement>(null);
-
-useEffect(() => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && hasNextPage) {
-        fetchNextPage();
-      }
-    },
-    { threshold: 0.1 }
-  );
-
-  if (loadMoreRef.current) {
-    observer.observe(loadMoreRef.current);
-  }
-
-  return () => observer.disconnect();
-}, [hasNextPage, fetchNextPage]);
-
-// No JSX
-<div ref={loadMoreRef} className="h-10" />
+```text
+Usuario abre Habitos.tsx
+         |
+         v
++------------------+
+| Carregar logs    | --> SELECT habit_logs WHERE date = today
+| do dia           |
++------------------+
+         |
+         v
++------------------+
+| Exibir           | --> HabitTracker com checkboxes
+| HabitTracker     |
++------------------+
+         |
+    [Usuario clica checkbox]
+         |
+         v
++------------------+
+| toggleHabit()    | --> UPSERT habit_logs
++------------------+
+         |
+         v
++------------------+
+| Atualizar UI     | --> Recalcular streak, progresso
+| Feedback visual  |
++------------------+
 ```
 
 ---
 
-## 10. Ordem de Implementacao
+## 9. Fluxo de Criacao de Meta
 
-1. **Migracao SQL**: Criar tabelas posts, post_likes, post_comments
-2. **Migracao Storage**: Criar bucket post-images
-3. **Hook usePosts**: Carregar e criar posts
-4. **ImageUpload.tsx**: Componente de upload
-5. **PostModal.tsx**: Refatorar para salvar no banco
-6. **PostCard.tsx**: Extrair componente de post
-7. **Comunidade.tsx**: Integrar com hooks, paginacao
-8. **Hook useComments**: CRUD de comentarios
-9. **CommentsModal.tsx**: Interface de comentarios
-10. **Testes end-to-end**: Fluxo completo
+```text
+Usuario abre GoalModal
+         |
+         v
++------------------+
+| Seleciona tipo   | --> 'workout', 'hydration', etc
++------------------+
+         |
+         v
++------------------+
+| Define target    | --> 4x/semana, 2000ml/dia
++------------------+
+         |
+         v
++------------------+
+| INSERT goal      | --> user_goals table
++------------------+
+         |
+         v
++------------------+
+| Atualizar        | --> Frequencia.tsx mostra nova meta
+| interface        |
++------------------+
+```
+
+---
+
+## 10. Dados para Graficos
+
+### Estrutura de dados para grafico semanal
+
+```typescript
+interface WeeklyChartData {
+  day: string;       // 'Seg', 'Ter', etc
+  workout: number;   // 0 ou 1 (fez treino)
+  hydration: number; // 0-100 (percentual da meta)
+  sleep: number;     // 0-100
+  nutrition: number; // 0 ou 1
+}
+```
+
+### Query para dados da semana
+
+```typescript
+const getWeeklyData = async () => {
+  const startOfWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const endOfWeek = endOfWeek(new Date(), { weekStartsOn: 1 });
+  
+  const { data: habitLogs } = await supabase
+    .from('habit_logs')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('date', format(startOfWeek, 'yyyy-MM-dd'))
+    .lte('date', format(endOfWeek, 'yyyy-MM-dd'));
+  
+  const { data: checkIns } = await supabase
+    .from('check_ins')
+    .select('created_at')
+    .eq('user_id', user.id)
+    .gte('created_at', startOfWeek.toISOString())
+    .lte('created_at', endOfWeek.toISOString());
+  
+  // Processar e retornar dados formatados
+  return formatWeeklyData(habitLogs, checkIns);
+};
+```
+
+---
+
+## 11. Ordem de Implementacao
+
+1. **Migracao SQL**: Criar tabelas user_goals e habit_logs
+2. **Hook useGoals**: CRUD de metas
+3. **Hook useHabits**: Rastreamento de habitos
+4. **GoalModal**: Refatorar para salvar no banco
+5. **HabitTracker**: Componente de checkboxes
+6. **Habitos.tsx**: Integrar rastreamento
+7. **ProgressChart**: Grafico de barras
+8. **Frequencia.tsx**: Metas reais, graficos
+9. **GoalProgressCard**: Cards de progresso
+10. **HabitDetailModal**: Historico e detalhes
+11. **Home.tsx**: Resumo de habitos do dia
 
 ---
 
@@ -515,10 +548,11 @@ useEffect(() => {
 
 Apos implementacao:
 
-1. Posts persistem no banco de dados
-2. Upload de imagens funciona e salva no storage
-3. Curtidas sao registradas e exibidas em tempo real
-4. Comentarios podem ser adicionados a qualquer post
-5. Feed carrega mais posts conforme usuario rola
-6. Usuario ve seu avatar e nome ao criar post
-7. Usuario pode deletar seus proprios posts
+1. Usuarios podem criar e acompanhar metas personalizadas
+2. Habitos diarios podem ser marcados com um toque
+3. Graficos mostram progresso semanal de forma visual
+4. Streak de cada habito e calculado automaticamente
+5. Historico completo de habitos disponivel
+6. Metas de treino calculadas automaticamente via check-ins
+7. Interface intuitiva com feedback visual imediato
+
