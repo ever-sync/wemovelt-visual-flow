@@ -116,7 +116,7 @@ const CommentsModal = ({ open, onOpenChange, post }: CommentsModalProps) => {
         </DialogHeader>
 
         {/* Comments list */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
           {isLoading ? (
             <div className="space-y-4 py-2">
               {[1, 2, 3].map((i) => (

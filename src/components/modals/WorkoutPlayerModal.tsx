@@ -146,7 +146,7 @@ const WorkoutPlayerModal = ({ workout, open, onOpenChange }: WorkoutPlayerModalP
           </div>
 
           {/* Exercise Info */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
             <div>
               <h3 className="text-xl font-bold">{currentExercise.name}</h3>
               <p className="text-muted-foreground">

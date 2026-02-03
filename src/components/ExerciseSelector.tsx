@@ -86,7 +86,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
         <button
           onClick={() => setSelectedCategory(null)}
           className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
@@ -109,7 +109,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
       </div>
 
       {/* Equipment Grid */}
-      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-hide">
         {filteredEquipment.map((eq) => (
           <button
             key={eq.id}

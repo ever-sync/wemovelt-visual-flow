@@ -53,7 +53,7 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-y-auto scrollbar-hide">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
             <HelpCircle className="text-primary" size={24} />

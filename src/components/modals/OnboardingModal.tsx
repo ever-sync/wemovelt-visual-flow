@@ -111,7 +111,7 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="bg-card border-border max-w-sm mx-4 rounded-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-card border-border max-w-sm mx-4 rounded-2xl max-h-[90vh] overflow-y-auto scrollbar-hide"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >

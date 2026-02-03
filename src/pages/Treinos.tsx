@@ -57,7 +57,7 @@ const Treinos = () => {
 
         {/* Category Filters */}
         <section className="animate-fade-in">
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${

@@ -106,7 +106,7 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-y-auto scrollbar-hide">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
             <Plus className="text-primary" size={24} />

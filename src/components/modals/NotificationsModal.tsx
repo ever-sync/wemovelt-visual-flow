@@ -66,7 +66,7 @@ const NotificationsModal = ({ open, onOpenChange }: NotificationsModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="bg-card border-border max-w-sm mx-4 rounded-2xl animate-scale-in max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
             <Bell className="text-primary" size={24} />
@@ -105,7 +105,7 @@ const NotificationsModal = ({ open, onOpenChange }: NotificationsModalProps) => 
           </div>
         )}
 
-        <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+        <div className="space-y-3 overflow-y-auto scrollbar-hide flex-1 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="animate-spin text-muted-foreground" size={32} />

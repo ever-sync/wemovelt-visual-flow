@@ -34,7 +34,7 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="bg-card border-t-border rounded-t-3xl h-[85vh] p-0">
-        <div className="overflow-y-auto h-full">
+        <div className="overflow-y-auto scrollbar-hide h-full">
           {/* Video */}
           <div className="p-4">
             <VideoPlayer
