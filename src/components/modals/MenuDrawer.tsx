@@ -1,8 +1,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { User, Settings, HelpCircle, LogOut, ChevronRight, Loader2 } from "lucide-react";
+import { User, Settings, HelpCircle, LogOut, ChevronRight, Loader2, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import ProfileModal from "./ProfileModal";
 import SettingsModal from "./SettingsModal";
 import HelpModal from "./HelpModal";
@@ -21,6 +22,7 @@ const menuItems = [
 const MenuDrawer = ({ open, onOpenChange }: MenuDrawerProps) => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const [profileOpen, setProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -35,6 +37,12 @@ const MenuDrawer = ({ open, onOpenChange }: MenuDrawerProps) => {
 
   const handleMenuClick = (action: string) => {
     onOpenChange(false);
+    
+    if (action === "admin") {
+      navigate("/admin");
+      return;
+    }
+    
     setTimeout(() => {
       if (action === "profile") setProfileOpen(true);
       if (action === "settings") setSettingsOpen(true);
@@ -69,6 +77,22 @@ const MenuDrawer = ({ open, onOpenChange }: MenuDrawerProps) => {
           </SheetHeader>
           
           <nav className="p-4">
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => handleMenuClick("admin")}
+                  className="w-full flex items-center justify-between p-4 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors touch-target"
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield size={20} className="text-primary" />
+                    <span className="font-medium">Painel Admin</span>
+                  </div>
+                  <ChevronRight size={18} className="text-muted-foreground" />
+                </button>
+                <div className="h-px bg-border my-4" />
+              </>
+            )}
+            
             {menuItems.map(({ icon: Icon, label, action }) => (
               <button
                 key={label}
