@@ -1,23 +1,37 @@
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 import { useState } from "react";
-
-const locations = [
-  {
-    id: 1,
-    name: "Zona Sul",
-    address: "Parque Ibirapuera",
-    coords: { lat: -23.5874, lng: -46.6576 },
-  },
-  {
-    id: 2,
-    name: "Zona Leste",
-    address: "Parque do Carmo",
-    coords: { lat: -23.5825, lng: -46.4739 },
-  },
-];
+import { useGyms } from "@/hooks/useGyms";
 
 const GymLocationsSection = () => {
-  const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
+  const { gyms, isLoading } = useGyms();
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <section className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
+        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+          <span className="text-primary">●</span> LOCALIZAÇÕES DAS ACADEMIAS
+        </h2>
+        <div className="bg-card rounded-2xl p-8 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      </section>
+    );
+  }
+
+  if (gyms.length === 0) {
+    return (
+      <section className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
+        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+          <span className="text-primary">●</span> LOCALIZAÇÕES DAS ACADEMIAS
+        </h2>
+        <div className="bg-card rounded-2xl p-6 text-center">
+          <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Nenhuma academia cadastrada ainda.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
@@ -74,69 +88,66 @@ const GymLocationsSection = () => {
             </svg>
           </div>
 
-          {/* Map pins */}
-          <div
-            className={`absolute top-1/3 left-1/4 cursor-pointer transition-transform ${
-              selectedLocation === 1 ? "scale-125" : "hover:scale-110"
-            }`}
-            onClick={() => setSelectedLocation(1)}
-          >
-            <div className="relative">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                selectedLocation === 1 ? "wemovelt-gradient" : "bg-primary"
-              }`}>
-                <MapPin size={18} className="text-foreground" />
+          {/* Map pins - dynamically positioned based on number of gyms */}
+          {gyms.slice(0, 4).map((gym, index) => {
+            // Position pins in different areas of the map
+            const positions = [
+              { top: "33%", left: "25%" },
+              { top: "50%", right: "25%" },
+              { top: "25%", right: "40%" },
+              { top: "60%", left: "40%" },
+            ];
+            const pos = positions[index % positions.length];
+            
+            return (
+              <div
+                key={gym.id}
+                className={`absolute cursor-pointer transition-transform ${
+                  selectedLocation === gym.id ? "scale-125" : "hover:scale-110"
+                }`}
+                style={pos}
+                onClick={() => setSelectedLocation(gym.id)}
+              >
+                <div className="relative">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+                    selectedLocation === gym.id ? "wemovelt-gradient" : "bg-primary"
+                  }`}>
+                    <MapPin size={18} className="text-foreground" />
+                  </div>
+                  {selectedLocation === gym.id && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-ping" />
+                  )}
+                </div>
               </div>
-              {selectedLocation === 1 && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-ping" />
-              )}
-            </div>
-          </div>
-
-          <div
-            className={`absolute top-1/2 right-1/4 cursor-pointer transition-transform ${
-              selectedLocation === 2 ? "scale-125" : "hover:scale-110"
-            }`}
-            onClick={() => setSelectedLocation(2)}
-          >
-            <div className="relative">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                selectedLocation === 2 ? "wemovelt-gradient" : "bg-primary"
-              }`}>
-                <MapPin size={18} className="text-foreground" />
-              </div>
-              {selectedLocation === 2 && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-ping" />
-              )}
-            </div>
-          </div>
+            );
+          })}
 
           {/* Legend */}
           <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-1 text-xs">
-            São Paulo, SP
+            {gyms.length} {gyms.length === 1 ? "academia" : "academias"}
           </div>
         </div>
 
         {/* Location cards */}
         <div className="p-4 space-y-2">
-          {locations.map((location) => (
+          {gyms.map((gym) => (
             <button
-              key={location.id}
-              onClick={() => setSelectedLocation(location.id)}
+              key={gym.id}
+              onClick={() => setSelectedLocation(gym.id)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                selectedLocation === location.id
+                selectedLocation === gym.id
                   ? "bg-primary/20 border border-primary"
                   : "bg-secondary hover:bg-secondary/80"
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                selectedLocation === location.id ? "wemovelt-gradient" : "bg-primary/20"
+                selectedLocation === gym.id ? "wemovelt-gradient" : "bg-primary/20"
               }`}>
-                <MapPin size={18} className={selectedLocation === location.id ? "text-foreground" : "text-primary"} />
+                <MapPin size={18} className={selectedLocation === gym.id ? "text-foreground" : "text-primary"} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-sm">{location.name}</h4>
-                <p className="text-xs text-muted-foreground">{location.address}</p>
+                <h4 className="font-bold text-sm">{gym.name}</h4>
+                <p className="text-xs text-muted-foreground">{gym.address || "Endereço não informado"}</p>
               </div>
             </button>
           ))}
