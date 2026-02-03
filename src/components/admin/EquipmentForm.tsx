@@ -262,14 +262,14 @@ const EquipmentForm = ({
           <div className="space-y-2">
             <Label>Academia</Label>
             <Select
-              value={formData.gym_id}
-              onValueChange={(value) => setFormData({ ...formData, gym_id: value })}
+              value={formData.gym_id || "none"}
+              onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Vincular a uma academia" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhuma</SelectItem>
+                <SelectItem value="none">Nenhuma</SelectItem>
                 {gyms?.map((gym) => (
                   <SelectItem key={gym.id} value={gym.id}>
                     {gym.name}
