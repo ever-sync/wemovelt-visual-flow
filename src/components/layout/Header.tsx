@@ -2,10 +2,12 @@ import { Menu, Bell } from "lucide-react";
 import { useState } from "react";
 import MenuDrawer from "../modals/MenuDrawer";
 import NotificationsModal from "../modals/NotificationsModal";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { unreadCount } = useNotifications();
 
   return (
     <>
@@ -25,7 +27,11 @@ const Header = () => {
             className="p-2 touch-target hover:bg-secondary rounded-lg transition-colors relative"
           >
             <Bell size={22} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center px-1">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </header>
