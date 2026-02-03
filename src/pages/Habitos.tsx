@@ -1,8 +1,11 @@
 import Header from "@/components/layout/Header";
 import BottomNav from "@/components/layout/BottomNav";
-import { Heart, Droplets, Moon, Apple, Smile } from "lucide-react";
+import { Heart, Droplets, Moon, Apple, Smile, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import HabitModal from "@/components/modals/HabitModal";
+import HabitTracker from "@/components/HabitTracker";
+import WeeklyHabitChart from "@/components/WeeklyHabitChart";
+import { useHabits } from "@/hooks/useHabits";
 
 const categories = [
   { 
@@ -65,6 +68,13 @@ const categories = [
 
 const Habitos = () => {
   const [selectedHabit, setSelectedHabit] = useState<typeof categories[0] | null>(null);
+  const { weeklyStats, isLoading } = useHabits();
+
+  // Calculate total completed today
+  const totalCompletedToday = weeklyStats.reduce((acc, stat) => {
+    const todayData = stat.weeklyData[stat.weeklyData.length - 1]; // Last day is today or closest
+    return acc + (todayData?.completed ? 1 : 0);
+  }, 0);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -80,33 +90,60 @@ const Habitos = () => {
             <p className="text-foreground/80 text-sm">
               Pequenas mudanças diárias geram grandes resultados
             </p>
+            
+            {!isLoading && (
+              <div className="mt-4 flex items-center gap-2 bg-foreground/10 rounded-xl px-4 py-2 w-fit">
+                <TrendingUp size={16} />
+                <span className="text-sm font-medium">
+                  {totalCompletedToday}/4 hábitos hoje
+                </span>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Categories */}
+        {/* Daily Habit Tracker */}
         <section className="animate-slide-up">
+          <HabitTracker />
+        </section>
+
+        {/* Categories */}
+        <section className="animate-slide-up" style={{ animationDelay: "0.05s" }}>
           <h2 className="text-lg font-bold mb-4">Categorias</h2>
           
           <div className="grid grid-cols-2 gap-3">
             {categories.map((category) => {
               const Icon = category.icon;
+              const stats = weeklyStats.find(s => s.type === category.id);
+              
               return (
                 <div
                   key={category.id}
                   onClick={() => setSelectedHabit(category)}
-                  className={`${category.color} rounded-2xl p-5 cursor-pointer hover:scale-[1.02] transition-transform`}
+                  className={`${category.color} rounded-2xl p-5 cursor-pointer hover:scale-[1.02] transition-transform relative overflow-hidden`}
                 >
                   <Icon className={`${category.iconColor} mb-3`} size={32} />
                   <h3 className="font-bold mb-1">{category.label}</h3>
                   <p className="text-xs text-muted-foreground">{category.description}</p>
+                  
+                  {stats && stats.streak > 0 && (
+                    <div className="absolute top-3 right-3 bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                      🔥 {stats.streak}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* Quick Tips */}
+        {/* Weekly Progress Chart */}
         <section className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
+          <WeeklyHabitChart />
+        </section>
+
+        {/* Quick Tips */}
+        <section className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
           <h2 className="text-lg font-bold mb-4">Dica do dia</h2>
           <div className="bg-card rounded-2xl p-5">
             <div className="flex items-start gap-4">

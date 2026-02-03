@@ -148,6 +148,39 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_logs: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          date: string
+          habit_type: string
+          id: string
+          notes: string | null
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          date?: string
+          habit_type: string
+          id?: string
+          notes?: string | null
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          date?: string
+          habit_type?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -291,6 +324,42 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           weight?: number | null
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          target: number
+          title: string
+          type: string
+          unit: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          target: number
+          title: string
+          type: string
+          unit: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          target?: number
+          title?: string
+          type?: string
+          unit?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

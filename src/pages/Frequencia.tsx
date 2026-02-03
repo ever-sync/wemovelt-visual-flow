@@ -1,27 +1,33 @@
 import Header from "@/components/layout/Header";
 import BottomNav from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
-import { MapPin, Target, Check, X, Trophy, Flame } from "lucide-react";
+import { MapPin, Target, Check, X, Trophy, Flame, Plus } from "lucide-react";
 import { useState } from "react";
 import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
 import { useCheckIn } from "@/hooks/useCheckIn";
-
-const goals = [
-  { id: 1, label: "Treinar 4x por semana", progress: 3, total: 4, completed: false },
-  { id: 2, label: "Beber 2L de água/dia", progress: 5, total: 7, completed: false },
-  { id: 3, label: "Dormir 8h por noite", progress: 7, total: 7, completed: true },
-];
+import { useGoals } from "@/hooks/useGoals";
+import GoalProgressCard from "@/components/GoalProgressCard";
+import ProgressChart from "@/components/ProgressChart";
+import { startOfWeek, addDays, format } from "date-fns";
 
 const Frequencia = () => {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
   
   const { weekData, streak, weeklyPercentage } = useCheckIn();
+  const { goalsWithProgress, isLoading: goalsLoading, deleteGoal } = useGoals();
+
+  // Prepare chart data from weekData
+  const chartData = weekData.map(({ day, checked }) => ({
+    day,
+    value: checked === true ? 1 : 0,
+    completed: checked === true,
+  }));
 
   const stats = [
     { icon: Flame, label: "Sequência", value: `${streak} ${streak === 1 ? "dia" : "dias"}`, color: "text-orange-400" },
-    { icon: Trophy, label: "Metas cumpridas", value: "12", color: "text-yellow-400" },
+    { icon: Trophy, label: "Metas ativas", value: String(goalsWithProgress.length), color: "text-yellow-400" },
   ];
 
   return (
@@ -91,31 +97,63 @@ const Frequencia = () => {
           </div>
         </section>
 
+        {/* Weekly Progress Chart */}
+        <section className="animate-slide-up" style={{ animationDelay: "0.05s" }}>
+          <h2 className="text-lg font-bold mb-3">Progresso de Treinos</h2>
+          <div className="bg-card rounded-2xl p-4">
+            <ProgressChart data={chartData} height={100} />
+          </div>
+        </section>
+
         {/* Goals */}
         <section className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <h2 className="text-lg font-bold mb-3">Minhas metas</h2>
-          
-          <div className="space-y-3">
-            {goals.map(({ id, label, progress, total, completed }) => (
-              <div key={id} className="bg-card rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`font-medium ${completed ? "line-through text-muted-foreground" : ""}`}>
-                    {label}
-                  </span>
-                  {completed && <Check className="text-success" size={20} />}
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${completed ? "bg-success" : "wemovelt-gradient"} transition-all duration-500`}
-                      style={{ width: `${(progress / total) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground">{progress}/{total}</span>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold">Minhas metas</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setGoalOpen(true)}
+              className="text-primary"
+            >
+              <Plus size={16} className="mr-1" />
+              Adicionar
+            </Button>
           </div>
+          
+          {goalsLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-card rounded-2xl p-4 animate-pulse">
+                  <div className="h-4 bg-secondary rounded w-2/3 mb-3" />
+                  <div className="h-2 bg-secondary rounded" />
+                </div>
+              ))}
+            </div>
+          ) : goalsWithProgress.length === 0 ? (
+            <div className="bg-card rounded-2xl p-6 text-center">
+              <Target className="mx-auto text-muted-foreground mb-3" size={40} />
+              <p className="text-muted-foreground text-sm">
+                Você ainda não tem metas definidas.
+              </p>
+              <Button
+                onClick={() => setGoalOpen(true)}
+                variant="link"
+                className="text-primary mt-2"
+              >
+                Criar primeira meta
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {goalsWithProgress.map((goal) => (
+                <GoalProgressCard 
+                  key={goal.id} 
+                  goal={goal} 
+                  onDelete={deleteGoal}
+                />
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
