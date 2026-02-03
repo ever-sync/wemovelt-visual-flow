@@ -104,7 +104,7 @@ const Comunidade = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
 
-      <main className="pt-14 max-w-md mx-auto">
+      <main className="pt-20 max-w-md mx-auto">
         {/* Feed */}
         <div className="divide-y divide-border">
           {isLoading ? (

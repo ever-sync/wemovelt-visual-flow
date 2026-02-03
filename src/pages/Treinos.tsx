@@ -38,7 +38,7 @@ const Treinos = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
-      <main className="pt-16 px-4 max-w-md mx-auto space-y-6">
+      <main className="pt-20 px-4 max-w-md mx-auto space-y-6">
         {/* Quick Actions */}
         <section className="animate-fade-in">
           <div className="grid grid-cols-3 gap-3">

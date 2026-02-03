@@ -82,7 +82,7 @@ const Habitos = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
-      <main className="pt-16 px-4 max-w-md mx-auto space-y-6">
+      <main className="pt-20 px-4 max-w-md mx-auto space-y-6">
         {/* Hero */}
         <section className="animate-fade-in">
           <div className="wemovelt-gradient rounded-2xl p-6 relative overflow-hidden">
