@@ -1,128 +1,85 @@
 
-# Plano: Reformular Formulario de Academia com Validacao de CEP
+
+# Plano: Tornar Campo Numero Opcional
 
 ## Resumo
 
-Simplificar o formulario de cadastro de academias removendo campos tecnicos (lat, lng, imagem) e adicionando busca automatica de endereco via CEP para maior precisao na navegacao GPS.
+Ajustar o formulario de academia para que o campo "Numero" seja opcional, ja que alguns locais (pracas, parques) podem nao ter numero.
 
 ---
 
-## Mudancas Planejadas
+## Mudancas Necessarias
 
-### 1. Remover Campos do Formulario
+### 1. Atualizar Schema de Validacao
 
-Campos a serem removidos de `GymForm.tsx`:
-- Latitude (input manual)
-- Longitude (input manual)
-- Botao "Usar minha localizacao"
-- URL da Imagem
+**Arquivo:** `src/lib/validations.ts`
 
-### 2. Adicionar Campo de CEP com Validacao
-
-Novo fluxo do formulario:
-
-```text
-+---------------------+
-|  Nome da Academia*  |
-+---------------------+
-|  CEP  [________]    |  <-- Novo campo com mascara e validacao
-+---------------------+
-|  Rua (auto)         |  <-- Preenchido automaticamente
-+---------------------+
-|  Numero [___]       |  <-- Novo campo obrigatorio
-+---------------------+
-|  Bairro (auto)      |  <-- Preenchido automaticamente
-+---------------------+
-|  Cidade/UF (auto)   |  <-- Preenchido automaticamente
-+---------------------+
-|  Raio Check-in      |  <-- Mantido
-+---------------------+
-```
-
-### 3. Integracao com API ViaCEP
-
-A API ViaCEP e gratuita e retorna dados de endereco brasileiros:
+Alterar o campo `number` de obrigatorio para opcional:
 
 ```typescript
-// Busca endereco pelo CEP
-const fetchAddressByCep = async (cep: string) => {
-  const cleanCep = cep.replace(/\D/g, '');
-  if (cleanCep.length !== 8) return null;
-  
-  const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-  const data = await response.json();
-  
-  if (data.erro) return null;
-  
-  return {
-    street: data.logradouro,
-    neighborhood: data.bairro,
-    city: data.localidade,
-    state: data.uf
-  };
-};
+// Antes
+number: z.string().min(1, "Número obrigatório"),
+
+// Depois
+number: z.string().optional(),
 ```
 
-### 4. Novo Schema de Validacao
+### 2. Atualizar Label do Campo no Formulario
 
-Adicionar em `src/lib/validations.ts`:
+**Arquivo:** `src/components/admin/GymForm.tsx`
+
+Remover o asterisco (*) do label do campo Numero:
 
 ```typescript
-// Schema para CEP brasileiro
-export const cepSchema = z
-  .string()
-  .regex(/^\d{5}-?\d{3}$/, "CEP invalido. Use o formato 00000-000");
+// Antes
+<Label htmlFor="number">Número *</Label>
 
-// Schema para formulario de academia
-export const gymFormSchema = z.object({
-  name: z.string().trim().min(2, "Nome muito curto").max(100, "Nome muito longo"),
-  cep: cepSchema,
-  street: z.string().min(1, "Rua obrigatoria"),
-  number: z.string().min(1, "Numero obrigatorio"),
-  neighborhood: z.string().min(1, "Bairro obrigatorio"),
-  city: z.string().min(1, "Cidade obrigatoria"),
-  state: z.string().length(2, "UF invalido"),
-  radius: z.number().min(10).max(500).default(50)
-});
+// Depois
+<Label htmlFor="number">Número</Label>
 ```
 
-### 5. Montagem do Endereco Completo
+### 3. Ajustar Montagem do Endereco
 
-O endereco sera montado automaticamente para salvar no banco:
+**Arquivo:** `src/components/admin/GymForm.tsx`
+
+Montar o endereco de forma inteligente, incluindo o numero apenas se existir:
 
 ```typescript
-// Monta endereco completo para navegacao GPS
-const fullAddress = `${street}, ${number} - ${neighborhood}, ${city} - ${state}, ${cep}`;
-// Exemplo: "Rua das Flores, 123 - Centro, Sao Paulo - SP, 01310-100"
+// Antes
+const fullAddress = `${formData.street}, ${formData.number} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
+
+// Depois
+const streetPart = formData.number 
+  ? `${formData.street}, ${formData.number}` 
+  : formData.street;
+const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
 ```
+
+---
+
+## Exemplos de Endereco Gerado
+
+| Com Numero | Sem Numero |
+|------------|------------|
+| `Rua das Flores, 123 - Centro, São Paulo - SP, 01310-100` | `Praça da Liberdade - Funcionários, Belo Horizonte - MG, 30130-000` |
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudancas |
-|---------|----------|
-| `src/components/admin/GymForm.tsx` | Reformular formulario completo |
-| `src/lib/validations.ts` | Adicionar schemas de CEP e academia |
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/lib/validations.ts` | Tornar campo `number` opcional no schema |
+| `src/components/admin/GymForm.tsx` | Remover asterisco do label e ajustar montagem do endereco |
 
 ---
 
-## Fluxo do Usuario
+## Sobre os Links de Navegacao
 
-1. Admin digita o CEP (ex: 01310-100)
-2. Sistema valida formato do CEP
-3. Sistema busca endereco na API ViaCEP
-4. Campos Rua, Bairro, Cidade e UF sao preenchidos automaticamente
-5. Admin insere apenas o Numero
-6. Ao salvar, endereco completo e montado para o campo `address`
-7. Navegacao GPS usa endereco completo para maior precisao
+Os links de navegacao Google Maps e Waze **ja estao funcionando corretamente** com o endereco:
 
----
+- Google Maps: `https://www.google.com/maps/dir/?api=1&destination={endereco_codificado}`
+- Waze: `https://www.waze.com/ul?q={endereco_codificado}&navigate=yes`
 
-## Beneficios
+O `encodeURIComponent()` ja esta sendo aplicado ao endereco, garantindo compatibilidade com caracteres especiais e espacos.
 
-- Endereco padronizado e completo
-- Maior precisao na navegacao GPS (endereco vs coordenadas)
-- Menos erros de digitacao
-- Formulario mais simples para o admin
-- Validacao em tempo real do CEP
