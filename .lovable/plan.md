@@ -1,72 +1,192 @@
 
-# Plano: Aumentar Zona de Respiro do Header
 
-## Situacao Atual
+# Plano: Melhorar Responsividade e Ocultar Scrollbars
 
-O header tem altura fixa de **56px** (h-14) e o conteudo usa **64px** de padding-top (pt-16), deixando apenas **8px** de respiro entre o header e o primeiro elemento.
+## Problemas Identificados
 
+Apos analise completa do aplicativo, identifiquei os seguintes problemas de responsividade e scrollbars:
+
+### 1. Scrollbars Vissiveis em Modais
+Varios modais usam `overflow-y-auto` que mostra scrollbars nativas feias:
+- HelpModal, ProfileModal, SettingsModal, MyWorkoutsModal
+- OnboardingModal, CreateWorkoutModal, DailyWorkoutModal
+- NotificationsModal, CommentsModal, EquipmentModal
+
+### 2. Scrollbars em Componentes Internos
+- `ExerciseSelector`: grid com `max-h-48 overflow-y-auto`
+- Filtros de categoria em Treinos: `overflow-x-auto`
+- Listas de notificacoes e comentarios
+
+### 3. Estrutura de Layout dos Modais
+Alguns modais nao tem estrutura flex adequada para scroll interno, causando layout quebrado em telas menores
+
+### 4. Sheets (Bottom Modals)
+- `EquipmentModal` e `WorkoutPlayerModal` usam Sheet com scroll interno visivel
+
+---
+
+## Solucao Proposta
+
+### 1. Adicionar CSS Global para Ocultar Scrollbars
+
+Adicionar no `src/index.css` uma classe utilitaria que oculta scrollbars mantendo a funcionalidade de scroll:
+
+```css
+/* Ocultar scrollbar mantendo funcionalidade */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome/Safari/Opera */
+}
 ```
-+---------------------------+
-|         HEADER (56px)     |
-+---------------------------+
-|  8px de espaco            |
-|  [Primeiro Card]          |
-```
 
-## Proposta
+### 2. Aplicar Classe nos Modais
 
-Aumentar o padding-top do main de **pt-16** (64px) para **pt-20** (80px), criando **24px** de respiro. Isso proporciona uma zona de respiro mais confortavel sem alterar o design do header.
-
-```
-+---------------------------+
-|         HEADER (56px)     |
-+---------------------------+
-|                           |
-|  24px de espaco           |
-|                           |
-|  [Primeiro Card]          |
-```
-
-## Arquivos a Modificar
+Atualizar os seguintes modais para usar `scrollbar-hide`:
 
 | Arquivo | Mudanca |
 |---------|---------|
-| `src/pages/Home.tsx` | `pt-16` → `pt-20` |
-| `src/pages/Treinos.tsx` | `pt-16` → `pt-20` |
-| `src/pages/Habitos.tsx` | `pt-16` → `pt-20` |
-| `src/pages/Frequencia.tsx` | `pt-16` → `pt-20` |
-| `src/pages/Comunidade.tsx` | `pt-14` → `pt-20` |
+| HelpModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| ProfileModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| SettingsModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| OnboardingModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| MyWorkoutsModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| DailyWorkoutModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| CreateWorkoutModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| NotificationsModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| CommentsModal.tsx | Adicionar `scrollbar-hide` no `overflow-y-auto` |
+| EquipmentModal.tsx | Adicionar `scrollbar-hide` no scroll interno |
+| WorkoutPlayerModal.tsx | Adicionar `scrollbar-hide` no scroll interno |
+
+### 3. Corrigir Scrolls Horizontais
+
+Adicionar `scrollbar-hide` nos componentes com scroll horizontal:
+- Treinos.tsx: filtros de categoria
+- ExerciseSelector.tsx: filtros de categoria e grid de exercicios
+
+### 4. Padronizar Estrutura dos Modais
+
+Varios modais precisam de estrutura flex para scroll correto:
+
+```tsx
+// Estrutura recomendada para modais com muito conteudo
+<DialogContent className="... max-h-[90vh] flex flex-col">
+  <DialogHeader className="flex-shrink-0">...</DialogHeader>
+  <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
+    {/* Conteudo scrollavel */}
+  </div>
+  <div className="flex-shrink-0">
+    {/* Botoes fixos no footer */}
+  </div>
+</DialogContent>
+```
+
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Tipo de Mudanca |
+|---------|-----------------|
+| src/index.css | Adicionar classe `.scrollbar-hide` |
+| src/components/modals/HelpModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/ProfileModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/SettingsModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/OnboardingModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/MyWorkoutsModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/DailyWorkoutModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/CreateWorkoutModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/NotificationsModal.tsx | Reestruturar layout + scrollbar-hide |
+| src/components/modals/CommentsModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/EquipmentModal.tsx | Adicionar scrollbar-hide |
+| src/components/modals/WorkoutPlayerModal.tsx | Adicionar scrollbar-hide |
+| src/pages/Treinos.tsx | Adicionar scrollbar-hide nos filtros |
+| src/components/ExerciseSelector.tsx | Adicionar scrollbar-hide |
+
+**Total: 14 arquivos**
+
+---
 
 ## Secao Tecnica
 
-### Mudanca em Cada Pagina
+### CSS a Adicionar (src/index.css)
 
-Linha do main em cada arquivo:
-
-```tsx
-// Antes
-<main className="pt-16 px-4 max-w-md mx-auto space-y-6">
-
-// Depois
-<main className="pt-20 px-4 max-w-md mx-auto space-y-6">
+```css
+/* Adicionar no final do arquivo, dentro de @layer utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 ```
 
-Para Comunidade (que usa pt-14):
-```tsx
-// Antes
-<main className="pt-14 max-w-md mx-auto">
+### Exemplo de Mudanca em Modal
 
-// Depois
-<main className="pt-20 max-w-md mx-auto">
+**Antes:**
+```tsx
+<DialogContent className="... max-h-[90vh] overflow-y-auto">
 ```
 
-### Valores de Referencia
+**Depois:**
+```tsx
+<DialogContent className="... max-h-[90vh] overflow-y-auto scrollbar-hide">
+```
 
-| Classe | Pixels |
-|--------|--------|
-| pt-14 | 56px |
-| pt-16 | 64px |
-| pt-20 | 80px |
-| pt-24 | 96px |
+### Exemplo de Mudanca em NotificationsModal (reestruturacao)
 
-Com **pt-20** teremos 24px de espaco visual (80px - 56px do header), o que e mais confortavel para leitura e navegacao.
+**Antes:**
+```tsx
+<DialogContent className="... max-h-[90vh] overflow-hidden flex flex-col">
+  ...
+  <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+```
+
+**Depois:**
+```tsx
+<DialogContent className="... max-h-[90vh] flex flex-col">
+  ...
+  <div className="space-y-3 overflow-y-auto scrollbar-hide flex-1 min-h-0">
+```
+
+### Mudanca no Treinos.tsx (filtros horizontais)
+
+**Antes:**
+```tsx
+<div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+```
+
+**Depois:**
+```tsx
+<div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+```
+
+### Mudanca no ExerciseSelector.tsx
+
+**Antes:**
+```tsx
+<div className="flex gap-2 overflow-x-auto pb-2">
+...
+<div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+```
+
+**Depois:**
+```tsx
+<div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+...
+<div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-hide">
+```
+
+---
+
+## Resultado Esperado
+
+Apos as mudancas:
+- Todas as areas com scroll terao scrollbars invisiveis
+- O scroll continuara funcionando normalmente (arrastar/touch)
+- Visual mais limpo e profissional em todos os modais
+- Experiencia consistente em iOS, Android e Desktop
+- Design original 100% preservado (apenas ocultando scrollbars)
+
