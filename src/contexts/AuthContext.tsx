@@ -19,11 +19,13 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  needsOnboarding: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -137,6 +139,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
+  // Check if user needs onboarding (profile exists but goal/experience not set)
+  const needsOnboarding = Boolean(
+    profile && !profile.goal && !profile.experience_level
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,11 +157,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         profile,
         loading,
+        needsOnboarding,
         signUp,
         signIn,
         signOut,
         resetPassword,
         updateProfile,
+        refreshProfile,
       }}
     >
       {children}

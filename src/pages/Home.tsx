@@ -2,12 +2,14 @@ import Header from "@/components/layout/Header";
 import BottomNav from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Play, MapPin, Check, X, Target } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CheckInModal from "@/components/modals/CheckInModal";
 import GoalModal from "@/components/modals/GoalModal";
+import OnboardingModal from "@/components/modals/OnboardingModal";
 import GymLocationsSection from "@/components/GymLocationsSection";
 import { useNavigate } from "react-router-dom";
 import { useCheckIn } from "@/hooks/useCheckIn";
+import { useAuth } from "@/contexts/AuthContext";
 
 const habits = [
   { icon: "💧", label: "Hidratação", color: "bg-blue-500/20" },
@@ -17,10 +19,24 @@ const habits = [
 
 const Home = () => {
   const navigate = useNavigate();
+  const { needsOnboarding, refreshProfile } = useAuth();
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const { weekData } = useCheckIn();
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (needsOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [needsOnboarding]);
+
+  const handleOnboardingComplete = async () => {
+    await refreshProfile();
+    setShowOnboarding(false);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -120,6 +136,7 @@ const Home = () => {
       <BottomNav />
       <CheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
       <GoalModal open={goalOpen} onOpenChange={setGoalOpen} />
+      <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
     </div>
   );
 };

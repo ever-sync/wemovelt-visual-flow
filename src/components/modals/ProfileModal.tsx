@@ -2,9 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Scale, Ruler, Target, Save } from "lucide-react";
-import { useState } from "react";
+import { User, Save, Loader2, Target } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import AvatarUpload from "@/components/AvatarUpload";
 
 interface ProfileModalProps {
   open: boolean;
@@ -20,18 +22,80 @@ const objectives = [
   "Bem-estar",
 ];
 
-const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
-  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+const experienceLevels = [
+  { value: "iniciante", label: "Iniciante" },
+  { value: "intermediario", label: "Intermediário" },
+  { value: "avancado", label: "Avançado" },
+];
 
-  const toggleObjective = (obj: string) => {
-    setSelectedObjectives((prev) =>
-      prev.includes(obj) ? prev.filter((o) => o !== obj) : [...prev, obj]
-    );
+const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
+  const { user, profile, updateProfile } = useAuth();
+  const [saving, setSaving] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    avatar_url: null as string | null,
+    age: "" as string | number,
+    weight: "" as string | number,
+    height: "" as string | number,
+    goal: "",
+    experience_level: "",
+  });
+
+  // Initialize form data when modal opens or profile changes
+  useEffect(() => {
+    if (profile && open) {
+      setFormData({
+        name: profile.name || "",
+        avatar_url: profile.avatar_url,
+        age: profile.age || "",
+        weight: profile.weight || "",
+        height: profile.height || "",
+        goal: profile.goal || "",
+        experience_level: profile.experience_level || "",
+      });
+    }
+  }, [profile, open]);
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Por favor, informe seu nome");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await updateProfile({
+        name: formData.name.trim(),
+        avatar_url: formData.avatar_url,
+        age: formData.age ? Number(formData.age) : null,
+        weight: formData.weight ? Number(formData.weight) : null,
+        height: formData.height ? Number(formData.height) : null,
+        goal: formData.goal || null,
+        experience_level: formData.experience_level || null,
+      });
+
+      if (error) throw error;
+
+      toast.success("Perfil salvo com sucesso!");
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Erro ao salvar perfil. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSave = () => {
-    toast.success("Perfil salvo com sucesso!");
-    onOpenChange(false);
+  const handleAvatarUpload = (url: string) => {
+    setFormData((prev) => ({ ...prev, avatar_url: url }));
+  };
+
+  const toggleObjective = (obj: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      goal: prev.goal === obj ? "" : obj,
+    }));
   };
 
   return (
@@ -45,6 +109,19 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
+          {/* Avatar */}
+          <div className="flex justify-center">
+            {user && (
+              <AvatarUpload
+                currentUrl={formData.avatar_url}
+                onUpload={handleAvatarUpload}
+                userId={user.id}
+                size="lg"
+              />
+            )}
+          </div>
+
+          {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-foreground">Nome</Label>
             <div className="relative">
@@ -53,61 +130,73 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                 id="name"
                 placeholder="Seu nome completo"
                 className="pl-10 h-12 bg-secondary border-border rounded-xl"
-                defaultValue="Usuário"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
               />
             </div>
           </div>
 
+          {/* Physical data */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label htmlFor="age" className="text-foreground text-sm">Idade</Label>
-              <div className="relative">
-                <Input
-                  id="age"
-                  type="number"
-                  placeholder="25"
-                  className="h-12 bg-secondary border-border rounded-xl text-center"
-                />
-              </div>
+              <Input
+                id="age"
+                type="number"
+                placeholder="25"
+                className="h-12 bg-secondary border-border rounded-xl text-center"
+                value={formData.age}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, age: e.target.value }))
+                }
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="weight" className="text-foreground text-sm">Peso (kg)</Label>
-              <div className="relative">
-                <Input
-                  id="weight"
-                  type="number"
-                  placeholder="70"
-                  className="h-12 bg-secondary border-border rounded-xl text-center"
-                />
-              </div>
+              <Input
+                id="weight"
+                type="number"
+                placeholder="70"
+                className="h-12 bg-secondary border-border rounded-xl text-center"
+                value={formData.weight}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, weight: e.target.value }))
+                }
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="height" className="text-foreground text-sm">Altura (cm)</Label>
-              <div className="relative">
-                <Input
-                  id="height"
-                  type="number"
-                  placeholder="175"
-                  className="h-12 bg-secondary border-border rounded-xl text-center"
-                />
-              </div>
+              <Input
+                id="height"
+                type="number"
+                placeholder="175"
+                className="h-12 bg-secondary border-border rounded-xl text-center"
+                value={formData.height}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, height: e.target.value }))
+                }
+              />
             </div>
           </div>
 
+          {/* Goals */}
           <div className="space-y-2">
             <Label className="text-foreground flex items-center gap-2">
               <Target size={16} className="text-primary" />
-              Objetivos
+              Objetivo
             </Label>
             <div className="flex flex-wrap gap-2">
               {objectives.map((obj) => (
                 <button
                   key={obj}
+                  type="button"
                   onClick={() => toggleObjective(obj)}
                   className={`px-3 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedObjectives.includes(obj)
+                    formData.goal === obj
                       ? "wemovelt-gradient text-foreground"
                       : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                   }`}
@@ -118,12 +207,49 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             </div>
           </div>
 
+          {/* Experience level */}
+          <div className="space-y-2">
+            <Label className="text-foreground">Nível de experiência</Label>
+            <div className="flex gap-2">
+              {experienceLevels.map((level) => (
+                <button
+                  key={level.value}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      experience_level: prev.experience_level === level.value ? "" : level.value,
+                    }))
+                  }
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                    formData.experience_level === level.value
+                      ? "wemovelt-gradient text-foreground"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Save button */}
           <Button
             onClick={handleSave}
+            disabled={saving}
             className="w-full h-12 text-lg font-bold wemovelt-gradient rounded-xl mt-4"
           >
-            <Save size={18} className="mr-2" />
-            Salvar Perfil
+            {saving ? (
+              <>
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save size={18} className="mr-2" />
+                Salvar Perfil
+              </>
+            )}
           </Button>
         </div>
       </DialogContent>
