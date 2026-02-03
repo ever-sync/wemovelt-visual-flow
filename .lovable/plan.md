@@ -1,113 +1,75 @@
 
-# Plano: Adicionar Acesso ao Painel Admin no Menu Lateral
+# Plano: Academias do Admin para Usuários + Remover Fundo Laranja
 
 ## Resumo
 
-Adicionar um item de menu no sidebar (MenuDrawer) que só aparece para usuários com a role de Super Admin. Ao clicar, o usuário é direcionado para o painel administrativo em `/admin`.
+Duas alterações:
+1. Remover o fundo laranja/vermelho da tela do Super Admin e deixar o fundo escuro padrão
+2. Garantir que as academias cadastradas pelo admin apareçam para os usuários na seção de localizações
 
-## Estrutura Atual
+---
 
-O `MenuDrawer` atual possui:
-- Meu Perfil (abre modal)
-- Configurações (abre modal)
-- Ajuda (abre modal)
-- Sair (logout)
+## Mudança 1: Remover Fundo Laranja do Admin
 
-## Mudanças Necessárias
+**Arquivo:** `src/pages/Admin.tsx`
 
-### 1. Atualizar MenuDrawer
-
-**Arquivo:** `src/components/modals/MenuDrawer.tsx`
-
-Mudanças:
-- Importar o hook `useUserRole` para verificar se o usuário é admin
-- Importar o ícone `Shield` do lucide-react (representa administração)
-- Adicionar um item de menu condicional "Painel Admin" que:
-  - Só aparece se `isAdmin === true`
-  - Navega para `/admin` ao clicar
-  - Fica visualmente destacado com estilo diferenciado
-
-### 2. Layout do Menu Atualizado
-
-```
-+---------------------------+
-|  Avatar + Nome + Email    |
-+---------------------------+
-|  🛡️  Painel Admin        |  <- Novo (só para admins)
-+---------------------------+
-|  👤  Meu Perfil           |
-|  ⚙️  Configurações        |
-|  ❓  Ajuda                |
-+---------------------------+
-|  🚪  Sair                 |
-+---------------------------+
-```
-
-## Implementação Detalhada
-
-### MenuDrawer Atualizado
+Alterar a linha 12:
+- De: `wemovelt-gradient` (gradiente laranja/vermelho)
+- Para: `bg-background` (fundo escuro padrão do app)
 
 ```typescript
-import { useUserRole } from "@/hooks/useUserRole";
-import { Shield } from "lucide-react";
+// Antes
+<div className="min-h-screen wemovelt-gradient">
 
-// No componente:
-const { isAdmin } = useUserRole();
+// Depois  
+<div className="min-h-screen bg-background">
+```
 
-const handleMenuClick = (action: string) => {
-  onOpenChange(false);
-  
-  if (action === "admin") {
-    navigate("/admin");
-    return;
-  }
-  
-  setTimeout(() => {
-    if (action === "profile") setProfileOpen(true);
-    // ...
-  }, 200);
+---
+
+## Mudança 2: Mostrar Academias do Banco para Usuários
+
+**Arquivo:** `src/components/GymLocationsSection.tsx`
+
+O componente atual usa dados estáticos (hardcoded). Vamos atualizar para:
+- Importar o hook `useGyms` que busca academias do banco
+- Renderizar as academias cadastradas pelo admin
+- Exibir informações como nome, endereço e ícone GPS
+
+Estrutura atualizada:
+
+```typescript
+import { useGyms } from "@/hooks/useGyms";
+
+const GymLocationsSection = () => {
+  const { gyms, isLoading } = useGyms();
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  // Renderiza as academias do banco
+  {gyms.map((gym) => (
+    <button key={gym.id} onClick={() => setSelectedLocation(gym.id)}>
+      <MapPin />
+      <h4>{gym.name}</h4>
+      <p>{gym.address}</p>
+    </button>
+  ))}
 };
 ```
 
-### Renderização Condicional
+---
 
-```typescript
-{isAdmin && (
-  <>
-    <button
-      onClick={() => handleMenuClick("admin")}
-      className="w-full flex items-center justify-between p-4 rounded-lg 
-                 bg-primary/10 hover:bg-primary/20 transition-colors touch-target"
-    >
-      <div className="flex items-center gap-3">
-        <Shield size={20} className="text-primary" />
-        <span className="font-medium">Painel Admin</span>
-      </div>
-      <ChevronRight size={18} className="text-muted-foreground" />
-    </button>
-    <div className="h-px bg-border my-4" />
-  </>
-)}
-```
+## Resultado Visual Esperado
 
-## Estilo Visual
+| Antes | Depois |
+|-------|--------|
+| Admin com fundo laranja | Admin com fundo escuro |
+| Academias fixas (Zona Sul, Zona Leste) | Academias do banco de dados (WEMOVELT Centro, Zona Leste, etc) |
 
-| Item | Estilo |
-|------|--------|
-| Painel Admin | Fundo com `bg-primary/10`, texto destacado |
-| Separador | Linha divisória abaixo do item admin |
-| Ícone | `Shield` (escudo) representando proteção/admin |
+---
 
-## Segurança
+## Arquivos a Modificar
 
-A verificação de admin é feita de forma segura:
-1. O hook `useUserRole` consulta a função `has_role` no banco (SECURITY DEFINER)
-2. A rota `/admin` também está protegida pelo componente `AdminRoute`
-3. Dupla proteção: menu condicional + rota protegida
-
-## Resultado Esperado
-
-1. Usuários normais: veem o menu sem a opção "Painel Admin"
-2. Super Admins: veem "Painel Admin" destacado no topo do menu
-3. Ao clicar: navegam diretamente para `/admin`
-4. Menu fecha automaticamente após o clique
+| Arquivo | Mudança |
+|---------|---------|
+| `src/pages/Admin.tsx` | Trocar `wemovelt-gradient` por `bg-background` |
+| `src/components/GymLocationsSection.tsx` | Usar hook `useGyms` em vez de dados estáticos |
