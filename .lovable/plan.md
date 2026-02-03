@@ -1,22 +1,32 @@
-# WEMOVELT - Plano de Implementação para Produção
+
+# FASE 1: Integração Supabase Externo + Autenticação Real
 
 ## Visão Geral
 
-Transformar o protótipo visual em aplicação completa com backend, autenticação e dados persistentes.
+Conectar o app WEMOVELT a um projeto Supabase externo, criar a estrutura de banco de dados e implementar autenticação real substituindo o sistema visual mockado atual.
 
 ---
 
-## FASE 1: Fundação (Backend + Auth)
-**Prioridade: 🔴 CRÍTICA | Complexidade: Média**
+## Pré-requisitos (Você precisa fazer)
 
-### 1.1 Ativar Lovable Cloud
-- [ ] Habilitar Cloud no projeto
-- [ ] Configurar Supabase integrado
+Antes de iniciar a implementação, você precisa:
 
-### 1.2 Estrutura de Banco de Dados
+1. **Criar um projeto no Supabase** (https://supabase.com)
+2. **Obter as credenciais:**
+   - Project URL (ex: `https://xxxx.supabase.co`)
+   - Anon Key (chave pública)
+3. **Configurar no Lovable:**
+   - Vá em Settings > Connectors > Supabase
+   - Conecte seu projeto Supabase externo
+
+---
+
+## Etapa 1: Estrutura do Banco de Dados
+
+### Tabelas a criar (SQL para rodar no Supabase)
 
 ```sql
--- Perfis de usuário
+-- 1. Perfis de usuário (vinculado ao auth.users)
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -25,329 +35,292 @@ CREATE TABLE profiles (
   age INTEGER,
   weight DECIMAL(5,2),
   height DECIMAL(5,2),
-  goal TEXT, -- 'perder_peso', 'ganhar_massa', 'manter', 'condicionamento'
-  experience_level TEXT, -- 'iniciante', 'intermediario', 'avancado'
+  goal TEXT,
+  experience_level TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Academias
+-- 2. Academias
 CREATE TABLE gyms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   address TEXT,
   lat DECIMAL(10,8),
   lng DECIMAL(11,8),
-  radius INTEGER DEFAULT 50, -- metros
+  radius INTEGER DEFAULT 50,
   image_url TEXT,
   equipment_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Equipamentos
+-- 3. Equipamentos
 CREATE TABLE equipment (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  category TEXT, -- 'peito', 'costas', 'pernas', 'ombros', 'biceps', 'triceps', 'abdomen', 'cardio'
+  category TEXT,
   description TEXT,
-  muscles TEXT[], -- músculos trabalhados
-  difficulty TEXT, -- 'iniciante', 'intermediario', 'avancado'
+  muscles TEXT[],
+  difficulty TEXT,
   video_url TEXT,
   image_url TEXT,
-  qr_code TEXT UNIQUE, -- código único para check-in
+  qr_code TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Check-ins
+-- 4. Check-ins
 CREATE TABLE check_ins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   gym_id UUID REFERENCES gyms(id),
   equipment_id UUID REFERENCES equipment(id),
-  method TEXT NOT NULL, -- 'qr', 'geo'
+  method TEXT NOT NULL,
   lat DECIMAL(10,8),
   lng DECIMAL(11,8),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Treinos salvos
-CREATE TABLE workouts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  equipment_ids UUID[],
-  duration_minutes INTEGER,
-  difficulty TEXT,
-  is_favorite BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- 5. Trigger para criar perfil automaticamente
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'name', 'Usuário'));
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Histórico de treinos
-CREATE TABLE workout_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  workout_id UUID REFERENCES workouts(id),
-  started_at TIMESTAMPTZ DEFAULT NOW(),
-  completed_at TIMESTAMPTZ,
-  notes TEXT
-);
-
--- Metas
-CREATE TABLE goals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL, -- 'frequencia', 'peso', 'exercicios'
-  target_value INTEGER,
-  current_value INTEGER DEFAULT 0,
-  start_date DATE DEFAULT CURRENT_DATE,
-  end_date DATE,
-  status TEXT DEFAULT 'ativa', -- 'ativa', 'concluida', 'cancelada'
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Hábitos
-CREATE TABLE habits (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  category TEXT NOT NULL, -- 'hidratacao', 'sono', 'alimentacao', 'alongamento', 'descanso', 'mental'
-  date DATE DEFAULT CURRENT_DATE,
-  value INTEGER, -- ex: ml de água, horas de sono
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Posts da comunidade
-CREATE TABLE posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  image_url TEXT,
-  likes_count INTEGER DEFAULT 0,
-  comments_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Comentários
-CREATE TABLE comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Curtidas
-CREATE TABLE likes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(post_id, user_id)
-);
-
--- Notificações
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL, -- 'lembrete', 'conquista', 'social', 'sistema'
-  title TEXT NOT NULL,
-  message TEXT,
-  read BOOLEAN DEFAULT FALSE,
-  data JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 
-### 1.3 Autenticação Real
-- [ ] Criar página `/auth` com login/cadastro
-- [ ] Implementar Supabase Auth
-- [ ] Fluxo de recuperação de senha
-- [ ] Proteção de rotas autenticadas
-- [ ] Redirect automático após login
+### Políticas de Segurança (RLS)
 
-### 1.4 Políticas RLS
-- [ ] Configurar RLS em todas as tabelas
-- [ ] Usuários só acessam próprios dados
-- [ ] Posts públicos para leitura
+```sql
+-- Habilitar RLS
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gyms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE check_ins ENABLE ROW LEVEL SECURITY;
 
----
+-- Profiles: usuário só acessa próprio perfil
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
 
-## FASE 2: Perfil e Dados do Usuário
-**Prioridade: 🔴 ALTA | Complexidade: Baixa**
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id);
 
-### 2.1 Perfil Funcional
-- [ ] Salvar/carregar dados do perfil
-- [ ] Upload de avatar (Supabase Storage)
-- [ ] Edição de informações pessoais
-- [ ] Configuração de objetivos
+-- Gyms: todos podem ver (público)
+CREATE POLICY "Anyone can view gyms"
+  ON gyms FOR SELECT
+  TO authenticated
+  USING (true);
 
-### 2.2 Onboarding
-- [ ] Fluxo de onboarding pós-cadastro
-- [ ] Coleta de dados (peso, altura, objetivo)
-- [ ] Seleção de nível de experiência
+-- Equipment: todos podem ver (público)
+CREATE POLICY "Anyone can view equipment"
+  ON equipment FOR SELECT
+  TO authenticated
+  USING (true);
 
----
+-- Check-ins: usuário só acessa próprios check-ins
+CREATE POLICY "Users can view own check-ins"
+  ON check_ins FOR SELECT
+  USING (auth.uid() = user_id);
 
-## FASE 3: Sistema de Treinos
-**Prioridade: 🟡 MÉDIA | Complexidade: Média**
+CREATE POLICY "Users can insert own check-ins"
+  ON check_ins FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
 
-### 3.1 Biblioteca de Equipamentos
-- [ ] Migrar dados estáticos para banco
-- [ ] Carregar equipamentos dinâmicos
-- [ ] Filtros por categoria/músculo
-- [ ] Busca por nome
+### Dados iniciais das academias
 
-### 3.2 Vídeos Demonstrativos
-- [ ] Substituir placeholders por vídeos reais
-- [ ] Player de vídeo otimizado
-- [ ] Thumbnails dos exercícios
-
-### 3.3 Treinos Personalizados
-- [ ] CRUD de treinos
-- [ ] Seleção de equipamentos
-- [ ] Favoritar treinos
-- [ ] Copiar/duplicar treinos
-
-### 3.4 Histórico de Treinos
-- [ ] Registro de sessões
-- [ ] Visualização de histórico
-- [ ] Estatísticas (frequência, tempo)
-
-### 3.5 Treino do Dia
-- [ ] Algoritmo de sugestão
-- [ ] Baseado em objetivos do usuário
-- [ ] Rotação de grupos musculares
+```sql
+INSERT INTO gyms (name, address, lat, lng, radius, image_url, equipment_count) VALUES
+  ('WEMOVELT Zona Sul', 'Av. Santo Amaro, 1234', -23.6245, -46.6634, 50, '/placeholder.svg', 25),
+  ('WEMOVELT Zona Norte', 'Av. Caetano Álvares, 567', -23.5089, -46.6280, 50, '/placeholder.svg', 30),
+  ('WEMOVELT Zona Leste', 'Av. Aricanduva, 890', -23.5428, -46.4747, 50, '/placeholder.svg', 28),
+  ('WEMOVELT Zona Oeste', 'Av. Francisco Morato, 432', -23.5834, -46.7320, 50, '/placeholder.svg', 22),
+  ('WEMOVELT Centro', 'Av. Paulista, 1000', -23.5614, -46.6558, 50, '/placeholder.svg', 35);
+```
 
 ---
 
-## FASE 4: Check-in Real (Já iniciado)
-**Prioridade: 🟡 MÉDIA | Complexidade: Alta**
+## Etapa 2: Integração Supabase no Frontend
 
-### 4.1 QR Code Scanner ✅
-- [x] Componente QRScanner
-- [x] Validação de formato
-- [ ] Integrar com banco de dados
+### Arquivos a criar
 
-### 4.2 Geolocalização ✅
-- [x] Hook useGeolocation
-- [x] Validação de proximidade
-- [ ] Integrar com banco de dados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/integrations/supabase/client.ts` | Cliente Supabase configurado |
+| `src/integrations/supabase/types.ts` | Tipos TypeScript das tabelas |
+| `src/contexts/AuthContext.tsx` | Contexto de autenticação global |
+| `src/hooks/useAuth.ts` | Hook para usar autenticação |
+| `src/pages/Auth.tsx` | Página dedicada de login/cadastro |
 
-### 4.3 Persistência
-- [ ] Migrar de localStorage para Supabase
-- [ ] Sincronização de dados
-- [ ] Histórico no banco
+### Fluxo de autenticação
 
-### 4.4 Estatísticas
-- [ ] Sequência real (streak)
-- [ ] Porcentagem semanal
-- [ ] Metas de frequência
-
----
-
-## FASE 5: Mapa de Academias Real
-**Prioridade: 🟢 BAIXA | Complexidade: Média**
-
-### 5.1 Integração com Mapas
-- [ ] Escolher API (Google Maps/Mapbox)
-- [ ] Adicionar chave de API
-- [ ] Componente de mapa interativo
-
-### 5.2 Funcionalidades
-- [ ] Lista de academias do banco
-- [ ] Marcadores no mapa
-- [ ] Calcular distância do usuário
-- [ ] Navegação para academia
-
----
-
-## FASE 6: Comunidade Funcional
-**Prioridade: 🟢 BAIXA | Complexidade: Alta**
-
-### 6.1 Posts
-- [ ] Criar posts com texto
-- [ ] Upload de imagens
-- [ ] Feed paginado
-- [ ] Pull-to-refresh
-
-### 6.2 Interações
-- [ ] Sistema de curtidas
-- [ ] Comentários
-- [ ] Contagem em tempo real
-
-### 6.3 Perfis Públicos
-- [ ] Visualizar perfil de outros usuários
-- [ ] Seguir/deixar de seguir (opcional)
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    FLUXO DE AUTENTICAÇÃO                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [Usuário acessa /]                                         │
+│         ↓                                                   │
+│  [Verifica sessão via onAuthStateChange]                    │
+│         ↓                                                   │
+│  ┌─────────────────┐    ┌─────────────────┐                │
+│  │  SEM SESSÃO     │    │  COM SESSÃO     │                │
+│  │                 │    │                 │                │
+│  │ • Mostra Welcome│    │ • Redirect /home│                │
+│  │ • Botões Login/ │    │ • Carrega perfil│                │
+│  │   Cadastro      │    │                 │                │
+│  └────────┬────────┘    └─────────────────┘                │
+│           ↓                                                 │
+│  [Abre modal ou vai para /auth]                            │
+│           ↓                                                 │
+│  [Supabase Auth (email/senha)]                             │
+│           ↓                                                 │
+│  [Sucesso → Redirect /home]                                │
+│  [Erro → Mostra mensagem]                                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## FASE 7: Hábitos e Metas
-**Prioridade: 🟢 BAIXA | Complexidade: Média**
+## Etapa 3: Componentes de Autenticação
 
-### 7.1 Rastreamento de Hábitos
-- [ ] Registro diário
-- [ ] Histórico de hábitos
-- [ ] Gráficos de progresso
+### AuthModal atualizado
 
-### 7.2 Metas Personalizadas
-- [ ] Criar metas
-- [ ] Acompanhamento automático
-- [ ] Notificações de progresso
+Modificações no modal existente:
+- Adicionar estados para email, password, name
+- Integrar com `supabase.auth.signUp()` e `supabase.auth.signInWithPassword()`
+- Validação com Zod (email válido, senha mínima 6 caracteres)
+- Tratamento de erros amigáveis
+- Loading state durante requisições
+- Link "Esqueci minha senha" funcional com `supabase.auth.resetPasswordForEmail()`
 
----
+### Proteção de rotas
 
-## FASE 8: Notificações
-**Prioridade: 🟢 BAIXA | Complexidade: Alta**
+Criar componente `ProtectedRoute` que:
+- Verifica se usuário está autenticado
+- Redireciona para `/` se não estiver
+- Mostra loading enquanto verifica
 
-### 8.1 Notificações In-App
-- [ ] Feed de notificações real
-- [ ] Marcar como lida
-- [ ] Tipos de notificação
+### Logout
 
-### 8.2 Push Notifications (Futuro)
-- [ ] Service Worker
-- [ ] Configurar Web Push
-- [ ] Lembretes de treino
+Adicionar botão de logout no MenuDrawer:
+- Chamar `supabase.auth.signOut()`
+- Limpar estado local
+- Redirecionar para `/`
 
 ---
 
-## FASE 9: Segurança e Performance
-**Prioridade: 🔴 CONTÍNUA**
+## Etapa 4: Arquivos a Modificar
 
-### 9.1 Segurança
-- [ ] RLS em todas as tabelas
-- [ ] Validação com Zod
-- [ ] Sanitização de inputs
-- [ ] Rate limiting
-
-### 9.2 Performance
-- [ ] Lazy loading de imagens
-- [ ] Cache com React Query
-- [ ] Otimização de queries
+| Arquivo | Modificação |
+|---------|-------------|
+| `src/App.tsx` | Envolver com AuthProvider, adicionar ProtectedRoute |
+| `src/components/modals/AuthModal.tsx` | Integrar Supabase Auth real |
+| `src/pages/Welcome.tsx` | Verificar sessão existente e redirecionar |
+| `src/components/modals/MenuDrawer.tsx` | Adicionar logout funcional |
+| `src/components/modals/ProfileModal.tsx` | Carregar/salvar dados do Supabase |
 
 ---
 
-## Cronograma Sugerido
+## Etapa 5: Detalhes Técnicos
 
-| Semana | Fase | Entregável |
-|--------|------|------------|
-| 1 | Fase 1 | Backend + Auth funcionando |
-| 2 | Fase 2 | Perfil persistente |
-| 3 | Fase 3 | Treinos funcionais |
-| 4 | Fase 4 | Check-in com banco |
-| 5-6 | Fase 5-6 | Mapa + Comunidade |
-| 7+ | Fase 7-8 | Hábitos + Notificações |
+### Estrutura de pastas final
+
+```text
+src/
+├── contexts/
+│   └── AuthContext.tsx          # Provider de autenticação
+├── hooks/
+│   ├── useAuth.ts               # Hook de autenticação
+│   └── useCheckIn.ts            # (existente)
+├── integrations/
+│   └── supabase/
+│       ├── client.ts            # Cliente Supabase
+│       └── types.ts             # Tipos das tabelas
+├── components/
+│   ├── ProtectedRoute.tsx       # Proteção de rotas
+│   └── modals/
+│       └── AuthModal.tsx        # (modificar)
+└── pages/
+    ├── Auth.tsx                 # Página de auth (opcional)
+    └── Welcome.tsx              # (modificar)
+```
+
+### Validação com Zod
+
+```typescript
+const loginSchema = z.object({
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(6, "Mínimo 6 caracteres"),
+});
+
+const registerSchema = loginSchema.extend({
+  name: z.string().min(2, "Nome muito curto"),
+});
+```
+
+### Tratamento de erros
+
+| Código Supabase | Mensagem para usuário |
+|-----------------|----------------------|
+| `user_already_exists` | "Este e-mail já está cadastrado" |
+| `invalid_credentials` | "E-mail ou senha incorretos" |
+| `email_not_confirmed` | "Confirme seu e-mail para continuar" |
+| `weak_password` | "Senha muito fraca, use pelo menos 6 caracteres" |
 
 ---
 
-## Próximo Passo Imediato
+## Configurações no Supabase Dashboard
 
-**Ativar Lovable Cloud** para configurar:
-1. Supabase integrado
-2. Banco de dados PostgreSQL
-3. Autenticação
-4. Storage para imagens
+Após conectar, você precisa configurar no painel do Supabase:
 
-Após ativar, começamos pela **Fase 1.2** (criação das tabelas).
+1. **Authentication > URL Configuration:**
+   - Site URL: URL do seu app (preview ou produção)
+   - Redirect URLs: Adicionar URLs permitidas
+
+2. **Authentication > Email Templates** (opcional):
+   - Personalizar e-mails em português
+
+3. **Authentication > Providers:**
+   - Email/Password já vem habilitado
+   - (Opcional) Habilitar Google, Apple, etc.
+
+4. **Desabilitar "Confirm email"** para testes:
+   - Authentication > Providers > Email
+   - Desmarcar "Confirm email"
+
+---
+
+## Ordem de Implementação
+
+1. **Conectar Supabase** ao projeto Lovable
+2. **Criar tabelas** via SQL Editor no Supabase
+3. **Criar cliente e tipos** (`src/integrations/supabase/`)
+4. **Criar AuthContext** com gerenciamento de sessão
+5. **Atualizar AuthModal** com login/cadastro real
+6. **Criar ProtectedRoute** para proteger páginas
+7. **Atualizar App.tsx** com providers e rotas protegidas
+8. **Atualizar ProfileModal** para persistir dados
+9. **Testar fluxos** de login, cadastro, logout e perfil
+
+---
+
+## Resultado Esperado
+
+Após a implementação:
+- Login e cadastro funcionais com Supabase
+- Sessão persistente (usuário logado ao recarregar)
+- Perfil salvo no banco de dados
+- Rotas protegidas (Home, Treinos, etc.)
+- Logout funcional
+- Mensagens de erro amigáveis
