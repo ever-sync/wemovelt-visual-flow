@@ -1,247 +1,456 @@
 
 
-# Analise Completa: O que falta para Producao
+# Plano: Tela de Super Admin
 
-## Status Geral do App
+## Resumo
 
-O app WEMOVELT esta bem desenvolvido com uma estrutura solida. Baseado na minha analise minuciosa de todos os arquivos, hooks, componentes, banco de dados e configuracoes de seguranca, identifiquei os itens abaixo organizados por prioridade.
+Criar um painel de administracao completo para o Super Admin gerenciar:
+- Exercicios/Equipamentos (nome, descricao, link do video, categoria, dificuldade)
+- Academias (nome, endereco, localizacao GPS, raio de check-in)
+- Vinculacao de equipamentos a academias
+
+A implementacao seguira as melhores praticas de seguranca com verificacao de roles via servidor.
 
 ---
 
-## CRITICO - Deve ser resolvido antes de ir ao ar
+## 1. Arquitetura de Seguranca
 
-### 1. Politica RLS Permissiva em Notifications
+### 1.1 Sistema de Roles no Banco de Dados
 
-**Problema**: A politica INSERT em `notifications` usa `WITH CHECK (true)`, permitindo que qualquer usuario autenticado insira notificacoes para qualquer outro usuario.
-
-**Status Atual**: Os triggers de like/comment usam SECURITY DEFINER, mas a politica INSERT ainda esta aberta.
-
-**Solucao**:
 ```sql
--- Remover politica permissiva
-DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
+-- Criar enum de roles
+CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
 
--- Opcional: Criar politica mais restritiva se necessario
--- (os triggers ja funcionam com SECURITY DEFINER)
+-- Criar tabela de roles separada (NUNCA no profiles)
+CREATE TABLE public.user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role app_role NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, role)
+);
+
+-- Habilitar RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Funcao SECURITY DEFINER para verificar role (evita recursao)
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+
+-- Politica: apenas admins podem ver roles
+CREATE POLICY "Admins can view all roles"
+ON public.user_roles FOR SELECT
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+-- Politica: apenas admins podem gerenciar roles
+CREATE POLICY "Admins can manage roles"
+ON public.user_roles FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
 ```
 
-### 2. Habilitar Protecao de Senhas Vazadas
+### 1.2 RLS para Equipamentos e Academias
 
-**Problema**: A verificacao HaveIBeenPwned esta desabilitada, permitindo que usuarios usem senhas comprometidas.
+```sql
+-- Admins podem inserir/atualizar/deletar equipamentos
+CREATE POLICY "Admins can manage equipment"
+ON public.equipment FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
 
-**Solucao**: Configurar via Auth settings para habilitar `leaked password protection`.
-
-### 3. Falta ErrorBoundary Global
-
-**Problema**: Nao ha tratamento de erros fatais na aplicacao. Se um componente crashar, toda a app quebra.
-
-**Solucao**: Implementar um ErrorBoundary no App.tsx que capture erros e exiba uma tela de fallback amigavel.
+-- Admins podem inserir/atualizar/deletar academias
+CREATE POLICY "Admins can manage gyms"
+ON public.gyms FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+```
 
 ---
 
-## ALTO - Muito importante para producao
+## 2. Estrutura de Arquivos
 
-### 4. Treino do Dia com Dados Estaticos
+### Novos Arquivos
 
-**Problema**: O componente `DailyWorkoutModal.tsx` usa dados hardcoded em vez de dados reais do banco.
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/pages/Admin.tsx` | Pagina principal do painel admin |
+| `src/components/admin/AdminEquipmentTab.tsx` | Tab de gerenciamento de equipamentos |
+| `src/components/admin/AdminGymsTab.tsx` | Tab de gerenciamento de academias |
+| `src/components/admin/EquipmentForm.tsx` | Formulario de criacao/edicao de equipamento |
+| `src/components/admin/GymForm.tsx` | Formulario de criacao/edicao de academia |
+| `src/components/AdminRoute.tsx` | Componente de protecao de rota para admin |
+| `src/hooks/useUserRole.ts` | Hook para verificar role do usuario |
+| `src/hooks/useAdminEquipment.ts` | Hook com mutations para equipamentos |
+| `src/hooks/useAdminGyms.ts` | Hook com mutations para academias |
 
-**Localizacao**: Linhas 10-47 de DailyWorkoutModal.tsx
+### Arquivos a Modificar
 
-**Solucao**: Integrar com hook useWorkouts para mostrar treinos reais do usuario.
+| Arquivo | Mudancas |
+|---------|----------|
+| `src/App.tsx` | Adicionar rota /admin |
+| `src/contexts/AuthContext.tsx` | Adicionar isAdmin e checkRole |
 
-### 5. Settings Modal Nao Funcional
+---
 
-**Problema**: Os switches e botoes de configuracoes em `SettingsModal.tsx` nao salvam nada - sao apenas UI.
+## 3. Componentes da Interface
 
-**Itens nao funcionais**:
-- Toggle de notificacoes push (nao integrado)
-- Toggle de notificacoes por email (nao integrado)
-- "Gerenciar dados" e "Visibilidade do perfil" (botoes decorativos)
-- "Termos de uso" e "Politica de privacidade" (links nao existem)
+### 3.1 Pagina Admin (`src/pages/Admin.tsx`)
 
-**Solucao**: Implementar logica real ou remover funcionalidades nao implementadas.
+Layout com abas para:
+- Equipamentos
+- Academias
+- (Futuro: Usuarios, Relatorios)
 
-### 6. Termos de Uso e Politica de Privacidade Ausentes
-
-**Problema**: Links em SettingsModal e potencialmente necessarios para LGPD/compliance.
-
-**Solucao**: Criar paginas ou modals com os termos legais.
-
-### 7. SEO e Meta Tags Incompletos
-
-**Problema**: O `index.html` tem meta tags minimas:
-- Falta description, keywords
-- Falta Open Graph tags (og:title, og:description, og:image)
-- Falta Twitter Card tags
-- Falta favicon customizado
-- Falta manifest.json para PWA
-
-**Solucao**:
-```html
-<head>
-  <meta name="description" content="WEMOVELT - App de treino em academias ao ar livre" />
-  <meta property="og:title" content="WEMOVELT" />
-  <meta property="og:description" content="Liberdade para treinar, forca para viver" />
-  <meta property="og:image" content="/og-image.jpg" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/favicon.ico" />
-</head>
+```text
++----------------------------------+
+|  [<] WEMOVELT Admin              |
++----------------------------------+
+|  [Equipamentos] [Academias]      |
++----------------------------------+
+|                                  |
+|  Lista de items com acoes:       |
+|  - Editar                        |
+|  - Excluir                       |
+|  - Vincular (para equipamentos)  |
+|                                  |
+|  [+ Novo]                        |
++----------------------------------+
 ```
 
-### 8. Console.logs em Producao
+### 3.2 Tab de Equipamentos
 
-**Problema**: Encontrei 105 ocorrencias de console.log/error/warn em 14 arquivos. Em producao, isso pode:
-- Vazar informacoes sensiveis
-- Impactar performance
-- Parecer pouco profissional
+Funcionalidades:
+- Listar todos os equipamentos com filtros por categoria
+- Criar novo equipamento (nome, descricao, video_url, categoria, dificuldade)
+- Editar equipamento existente
+- Excluir equipamento
+- Vincular equipamento a uma academia (selecionar gym_id)
 
-**Solucao**: Implementar logger condicional que so loga em desenvolvimento:
+### 3.3 Tab de Academias
+
+Funcionalidades:
+- Listar todas as academias
+- Criar nova academia (nome, endereco, lat, lng, radius)
+- Editar academia existente
+- Excluir academia
+- Mapa interativo para selecionar localizacao (opcional)
+
+### 3.4 Formulario de Equipamento
+
+Campos:
+- Nome (obrigatorio)
+- Descricao (textarea)
+- Link do Video (URL do YouTube)
+- Categoria (select: peito, costas, pernas, bracos, ombros, abdomen)
+- Dificuldade (select: beginner, intermediate, advanced)
+- Academia (select com lista de academias)
+- Musculos trabalhados (multi-select)
+
+### 3.5 Formulario de Academia
+
+Campos:
+- Nome (obrigatorio)
+- Endereco (texto)
+- Latitude (numero)
+- Longitude (numero)
+- Raio de check-in em metros (numero, default: 50)
+- Imagem (URL ou upload)
+
+---
+
+## 4. Hooks de Administracao
+
+### 4.1 useUserRole
+
 ```typescript
-const logger = {
-  error: (...args) => {
-    if (import.meta.env.DEV) console.error(...args);
-    // Em prod: enviar para servico de monitoramento
-  }
+// src/hooks/useUserRole.ts
+export const useUserRole = () => {
+  const { user } = useAuth();
+  
+  const { data: isAdmin, isLoading } = useQuery({
+    queryKey: ["user-role", user?.id],
+    queryFn: async () => {
+      // Chama funcao no banco que verifica role
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: user!.id, _role: 'admin' });
+      
+      if (error) return false;
+      return data as boolean;
+    },
+    enabled: !!user,
+  });
+  
+  return { isAdmin: isAdmin ?? false, isLoading };
 };
 ```
 
----
+### 4.2 useAdminEquipment
 
-## MEDIO - Importante mas nao bloqueante
-
-### 9. Equipamentos sem gym_id
-
-**Problema**: Todos os 12 equipamentos no banco tem `gym_id: null`, impedindo a validacao de QR Code que verifica se o equipamento pertence a academia.
-
-**Query de Verificacao**:
-```sql
-SELECT id, name, gym_id FROM equipment;
--- Todos retornam gym_id = NULL
+```typescript
+// src/hooks/useAdminEquipment.ts
+export const useAdminEquipment = () => {
+  const queryClient = useQueryClient();
+  
+  const createEquipment = useMutation({
+    mutationFn: async (data: CreateEquipmentData) => {
+      const { error } = await supabase
+        .from("equipment")
+        .insert(data);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["equipment"] }),
+  });
+  
+  const updateEquipment = useMutation({
+    mutationFn: async ({ id, ...data }: UpdateEquipmentData) => {
+      const { error } = await supabase
+        .from("equipment")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["equipment"] }),
+  });
+  
+  const deleteEquipment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("equipment")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["equipment"] }),
+  });
+  
+  return { createEquipment, updateEquipment, deleteEquipment };
+};
 ```
 
-**Solucao**: Atualizar equipamentos com gym_id correto ou ajustar logica de validacao.
+### 4.3 useAdminGyms
 
-### 10. Localizacao GPS Precisa Exposta
-
-**Problema**: A tabela `check_ins` armazena coordenadas GPS precisas (lat/lng) dos usuarios. Dados de localizacao sao sensiveis pela LGPD.
-
-**Consideracoes**:
-- Avaliar se precisa da precisao total ou se pode truncar (ex: 2 casas decimais)
-- Implementar retencao de dados (deletar check-ins antigos)
-- Adicionar consentimento explicito do usuario
-
-### 11. Falta Tratamento de Estado Offline
-
-**Problema**: O app nao trata cenarios de conexao lenta ou offline. Usuarios podem perder dados.
-
-**Solucao**:
-- Adicionar indicador de status de conexao
-- Implementar queue de acoes para sincronizar quando online
-- Mostrar mensagens claras quando offline
-
-### 12. Pagina 404 Nao Estilizada
-
-**Problema**: A pagina NotFound.tsx usa estilo generico (`bg-muted`) que nao combina com o design do app.
-
-**Solucao**: Estilizar com wemovelt-gradient e manter identidade visual.
+Similar ao useAdminEquipment, com mutations para:
+- createGym
+- updateGym
+- deleteGym
 
 ---
 
-## BAIXO - Melhorias desejadas
+## 5. Rota Protegida para Admin
 
-### 13. Falta Loading Skeleton em Algumas Telas
+### 5.1 AdminRoute Component
 
-**Problema**: Algumas telas mostram estado de loading generico ou nenhum.
+```typescript
+// src/components/AdminRoute.tsx
+const AdminRoute = ({ children }: { children: ReactNode }) => {
+  const { user, loading } = useAuth();
+  const { isAdmin, isLoading } = useUserRole();
+  
+  if (loading || isLoading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/home" replace />;
+  }
+  
+  return <>{children}</>;
+};
+```
 
-**Exemplos**:
-- Habitos.tsx mostra apenas texto quando carregando
-- Home.tsx nao tem skeleton para dados de frequencia
+### 5.2 Rota no App.tsx
 
-### 14. PWA/Instalacao Nao Configurada
-
-**Problema**: O app nao pode ser instalado como PWA porque falta:
-- manifest.json
-- Service Worker
-- Icons em varios tamanhos
-
-**Beneficio**: Usuarios poderiam instalar o app no celular como app nativo.
-
-### 15. Falta Confirmacao de Acoes Destrutivas
-
-**Problema**: Algumas acoes destrutivas (deletar post, deletar meta) nao pedem confirmacao.
-
-**Solucao**: Adicionar dialogo de confirmacao antes de acoes irreversiveis.
-
-### 16. Falta Feedback de Operacoes Lentas
-
-**Problema**: Algumas operacoes podem demorar (upload de imagem, criar post com imagem) sem feedback visual adequado.
-
-**Solucao**: Garantir que todas as operacoes async tenham indicadores de loading.
-
-### 17. Acessibilidade
-
-**Problema**: Verificar se todos os elementos interativos tem:
-- Labels apropriados para screen readers
-- Contraste de cores adequado
-- Navegacao por teclado
+```typescript
+<Route path="/admin" element={
+  <AdminRoute>
+    <Admin />
+  </AdminRoute>
+} />
+```
 
 ---
 
-## Dados de Seed Necessarios
+## 6. Migracao SQL Completa
 
-### 18. Dados de Equipamentos Incompletos
+```sql
+-- 1. Criar enum de roles
+CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
 
-**Problema**: Os 12 equipamentos no banco nao tem:
-- `image_url` (imagens dos equipamentos)
-- `video_url` (videos demonstrativos)
-- `description` (descricao de uso)
-- `qr_code` (codigos QR)
-- `gym_id` (associacao com academia)
+-- 2. Criar tabela de roles
+CREATE TABLE public.user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role app_role NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, role)
+);
 
-**Impacto**: 
-- VideoPlayer mostra "Video nao disponivel"
-- Cards de equipamento mostram icone generico
-- QR Code check-in nao funciona (equipment nao vinculado a gym)
+-- 3. Habilitar RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- 4. Funcao de verificacao de role
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+
+-- 5. Politicas de user_roles
+CREATE POLICY "Admins can view roles"
+ON public.user_roles FOR SELECT
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can insert roles"
+ON public.user_roles FOR INSERT
+TO authenticated
+WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can delete roles"
+ON public.user_roles FOR DELETE
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+-- 6. Politicas de equipamentos para admins
+CREATE POLICY "Admins can insert equipment"
+ON public.equipment FOR INSERT
+TO authenticated
+WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can update equipment"
+ON public.equipment FOR UPDATE
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can delete equipment"
+ON public.equipment FOR DELETE
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+-- 7. Politicas de academias para admins
+CREATE POLICY "Admins can insert gyms"
+ON public.gyms FOR INSERT
+TO authenticated
+WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can update gyms"
+ON public.gyms FOR UPDATE
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Admins can delete gyms"
+ON public.gyms FOR DELETE
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+```
 
 ---
 
-## Checklist de Lancamento
+## 7. Fluxo de Acesso ao Admin
 
 ```text
-[x] Resolver politica RLS em notifications
-[ ] Habilitar leaked password protection (requer config manual)
-[x] Implementar ErrorBoundary
-[x] Completar meta tags e SEO
-[x] Criar paginas de Termos e Privacidade
-[ ] Vincular equipamentos a academias (dados de seed)
-[ ] Popular dados de equipamentos (imagens, videos)
-[x] Logger condicional implementado
-[x] Implementar DailyWorkout com dados reais
-[x] Funcionalizar SettingsModal
-[ ] Testar fluxo completo de check-in (QR e Geo)
-[ ] Testar notificacoes (curtir/comentar)
-[ ] Testar criacao de treino e execucao
-[x] Estilizar pagina 404
-[ ] Configurar dominio customizado
-[ ] Publicar app
+Usuario acessa /admin
+        |
+        v
++----------------+
+| AdminRoute     |
+| verifica auth  |
++----------------+
+        |
+  Logado? ----No----> Redireciona para /
+        |
+       Yes
+        |
+        v
++----------------+
+| useUserRole    |
+| verifica role  |
+| (via servidor) |
++----------------+
+        |
+  isAdmin? ---No----> Redireciona para /home
+        |                (sem acesso)
+       Yes
+        |
+        v
++----------------+
+| Pagina Admin   |
+| (acesso total) |
++----------------+
 ```
 
 ---
 
-## Resumo por Prioridade
+## 8. Ordem de Implementacao
 
-| Prioridade | Quantidade | Descricao |
-|------------|------------|-----------|
-| CRITICO | 3 | RLS, senhas vazadas, ErrorBoundary |
-| ALTO | 5 | Treino do dia, Settings, Termos, SEO, Console.logs |
-| MEDIO | 4 | Equipamentos, GPS, Offline, 404 |
-| BAIXO | 5 | Loading, PWA, Confirmacao, Feedback, Acessibilidade |
+1. Migracao SQL - Criar tabela user_roles, funcao has_role e politicas RLS
+2. Hook useUserRole - Verificacao de role via servidor
+3. AdminRoute - Componente de protecao de rota
+4. Pagina Admin - Layout com tabs
+5. useAdminEquipment - Mutations de equipamentos
+6. AdminEquipmentTab - Lista e acoes de equipamentos
+7. EquipmentForm - Formulario de equipamento
+8. useAdminGyms - Mutations de academias
+9. AdminGymsTab - Lista e acoes de academias
+10. GymForm - Formulario de academia
+11. App.tsx - Adicionar rota /admin
 
 ---
 
-## Proximo Passo Recomendado
+## 9. Consideracoes de Seguranca
 
-Sugiro resolver primeiro os **3 itens CRITICOS** e depois os **5 itens ALTOS**, totalizando 8 correcoes essenciais para um lancamento seguro em producao.
+| Aspecto | Implementacao |
+|---------|---------------|
+| Roles em tabela separada | Evita escalonamento de privilegios |
+| SECURITY DEFINER | Evita recursao em RLS |
+| Verificacao no servidor | Nunca confia em localStorage |
+| RLS em todas as operacoes | Dupla camada de seguranca |
+| Rota protegida no frontend | UX - nao mostra UI de admin para nao-admins |
 
-Posso implementar essas correcoes em ordem de prioridade. Quer que eu comece pelos itens criticos?
+---
+
+## 10. Primeiro Admin
+
+Apos implementacao, sera necessario inserir o primeiro admin manualmente:
+
+```sql
+-- Substitua pelo UUID do seu usuario
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('seu-user-id-aqui', 'admin');
+```
+
+Depois, o admin pode gerenciar outros admins pela interface.
+
+---
+
+## 11. Resultado Esperado
+
+Apos implementacao:
+1. Rota /admin acessivel apenas para usuarios com role 'admin'
+2. Super Admin pode criar/editar/excluir equipamentos com video e descricao
+3. Super Admin pode criar/editar/excluir academias com localizacao
+4. Super Admin pode vincular equipamentos a academias especificas
+5. Sistema de roles escalavel para futuras funcionalidades (moderadores, etc)
 
