@@ -1,13 +1,26 @@
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Navigation } from "lucide-react";
 import { useState } from "react";
 import { useGyms } from "@/hooks/useGyms";
 import GoogleMapsDisplay from "./GoogleMapsDisplay";
+import { Button } from "./ui/button";
 
 const GymLocationsSection = () => {
   const { gyms, isLoading } = useGyms();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   
   const hasGoogleMapsKey = !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  const selectedGym = selectedLocation ? gyms.find(g => g.id === selectedLocation) : null;
+
+  const openGoogleMaps = (lat: number, lng: number) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+  };
+
+  const openWaze = (lat: number, lng: number) => {
+    const url = `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+    window.open(url, '_blank');
+  };
 
   if (isLoading) {
     return (
@@ -166,6 +179,27 @@ const GymLocationsSection = () => {
             </button>
           ))}
         </div>
+
+        {/* GPS Navigation buttons */}
+        {selectedGym && selectedGym.lat && selectedGym.lng && (
+          <div className="p-4 border-t border-border flex gap-2">
+            <Button 
+              onClick={() => openGoogleMaps(selectedGym.lat!, selectedGym.lng!)}
+              className="flex-1 wemovelt-gradient"
+            >
+              <Navigation size={18} />
+              Google Maps
+            </Button>
+            <Button 
+              onClick={() => openWaze(selectedGym.lat!, selectedGym.lng!)}
+              variant="secondary"
+              className="flex-1"
+            >
+              <Navigation size={18} />
+              Waze
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

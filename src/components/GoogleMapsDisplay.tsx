@@ -1,5 +1,6 @@
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useMemo } from 'react';
+import { MapPin } from 'lucide-react';
 
 interface Gym {
   id: string;
@@ -75,12 +76,18 @@ const GoogleMapsDisplay = ({ gyms, selectedId, onMarkerClick }: GoogleMapsDispla
               onClick={() => onMarkerClick(gym.id)}
               title={gym.name}
             >
-              <Pin
-                background={isSelected ? "#f97316" : "#ea580c"}
-                borderColor={isSelected ? "#fff" : "#c2410c"}
-                glyphColor="#fff"
-                scale={isSelected ? 1.2 : 1}
-              />
+              <div 
+                className={`
+                  w-10 h-10 rounded-full flex items-center justify-center 
+                  shadow-lg cursor-pointer transition-transform
+                  ${isSelected ? 'scale-125 ring-2 ring-white' : 'hover:scale-110'}
+                `}
+                style={{
+                  background: 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)'
+                }}
+              >
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
             </AdvancedMarker>
           );
         })}
