@@ -35,7 +35,11 @@ const faqs = [
 ];
 
 const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
-  const handleWhatsApp = () => {
+  const handleWhatsAppPersonal = () => {
+    window.open("https://wa.me/5511952130972?text=Olá! Gostaria de falar com um personal do WEMOVELT", "_blank");
+  };
+
+  const handleWhatsAppSupport = () => {
     window.open("https://wa.me/5511952130972?text=Olá! Preciso de ajuda com o app WEMOVELT", "_blank");
   };
 
@@ -67,17 +71,27 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
             ))}
           </Accordion>
 
-          {/* WhatsApp Button */}
-          <button
-            onClick={handleWhatsApp}
-            className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold py-4 rounded-xl transition-colors"
-          >
-            <MessageCircle size={24} />
-            Falar pelo WhatsApp
-          </button>
+          {/* WhatsApp Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleWhatsAppPersonal}
+              className="w-full flex items-center justify-center gap-3 wemovelt-gradient text-white font-bold py-4 rounded-xl transition-all hover:opacity-90"
+            >
+              <MessageCircle size={24} />
+              Chame nosso personal
+            </button>
+
+            <button
+              onClick={handleWhatsAppSupport}
+              className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold py-4 rounded-xl transition-colors"
+            >
+              <MessageCircle size={24} />
+              Falar com suporte
+            </button>
+          </div>
 
           <p className="text-center text-xs text-muted-foreground">
-            Não encontrou sua dúvida? Fale diretamente com nosso suporte!
+            Dúvidas sobre o app? Quer um treino personalizado? Estamos aqui!
           </p>
         </div>
       </DialogContent>
