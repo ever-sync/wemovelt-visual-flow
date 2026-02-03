@@ -8,9 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Search, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Search, CheckCircle2, AlertCircle, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { gymFormSchema } from "@/lib/validations";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Gym {
   id: string;
@@ -88,7 +89,51 @@ const GymForm = ({
     radius: "50",
   });
   const [cepStatus, setCepStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+    setGeocodeStatus("loading");
+    try {
+      const { data, error } = await supabase.functions.invoke("geocode-address", {
+        body: { address },
+      });
+
+      if (error) {
+        console.error("Geocoding error:", error);
+        setGeocodeStatus("error");
+        toast({
+          title: "Erro ao obter coordenadas",
+          description: "Não foi possível geocodificar o endereço.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      if (data.error) {
+        console.error("Geocoding API error:", data.error);
+        setGeocodeStatus("error");
+        toast({
+          title: "Endereço não encontrado",
+          description: data.error,
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setGeocodeStatus("success");
+      return { lat: data.lat, lng: data.lng };
+    } catch (err) {
+      console.error("Geocoding exception:", err);
+      setGeocodeStatus("error");
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível conectar ao serviço de geocodificação.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (gym) {
@@ -175,7 +220,7 @@ const GymForm = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const validationData = {
@@ -202,11 +247,19 @@ const GymForm = ({
       : formData.street;
     const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
 
+    // Geocode the address to get coordinates
+    const coordinates = await geocodeAddress(fullAddress);
+    
+    if (!coordinates) {
+      // Geocoding failed, don't proceed
+      return;
+    }
+
     const data = {
       name: formData.name,
       address: fullAddress,
-      lat: null,
-      lng: null,
+      lat: coordinates.lat,
+      lng: coordinates.lng,
       radius: parseInt(formData.radius) || 50,
       image_url: null,
       ...(gym?.id && { id: gym.id }),
@@ -364,9 +417,12 @@ const GymForm = ({
             >
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+            <Button type="submit" className="flex-1" disabled={isLoading || geocodeStatus === "loading"}>
+              {isLoading || geocodeStatus === "loading" ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  {geocodeStatus === "loading" ? "Obtendo coordenadas..." : "Salvando..."}
+                </>
               ) : gym ? (
                 "Salvar"
               ) : (
