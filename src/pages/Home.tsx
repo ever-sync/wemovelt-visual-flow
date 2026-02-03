@@ -42,7 +42,7 @@ const Home = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
-      <main className="pt-20 px-4 max-w-md mx-auto space-y-6">
+      <main className="pt-[calc(5rem+env(safe-area-inset-top))] px-4 max-w-md mx-auto space-y-6">
         {/* Treinos Section */}
         <section className="animate-fade-in">
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">

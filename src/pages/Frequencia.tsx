@@ -34,7 +34,7 @@ const Frequencia = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
-      <main className="pt-20 px-4 max-w-md mx-auto space-y-6">
+      <main className="pt-[calc(5rem+env(safe-area-inset-top))] px-4 max-w-md mx-auto space-y-6">
         {/* Stats */}
         <section className="animate-fade-in">
           <div className="grid grid-cols-2 gap-3">
