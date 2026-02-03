@@ -12,14 +12,15 @@ const GymLocationsSection = () => {
   
   const selectedGym = selectedLocation ? gyms.find(g => g.id === selectedLocation) : null;
 
-  const openGoogleMaps = (lat: number, lng: number) => {
-    const destination = encodeURIComponent(`${lat},${lng}`);
+  const openGoogleMaps = (address: string) => {
+    const destination = encodeURIComponent(address);
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
     window.open(url, '_blank');
   };
 
-  const openWaze = (lat: number, lng: number) => {
-    const url = `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  const openWaze = (address: string) => {
+    const destination = encodeURIComponent(address);
+    const url = `https://www.waze.com/ul?q=${destination}&navigate=yes`;
     window.open(url, '_blank');
   };
 
@@ -182,17 +183,17 @@ const GymLocationsSection = () => {
         </div>
 
         {/* GPS Navigation buttons */}
-        {selectedGym && selectedGym.lat && selectedGym.lng && (
+        {selectedGym && selectedGym.address && (
           <div className="p-4 border-t border-border flex gap-2">
             <Button 
-              onClick={() => openGoogleMaps(selectedGym.lat!, selectedGym.lng!)}
+              onClick={() => openGoogleMaps(selectedGym.address!)}
               className="flex-1 wemovelt-gradient"
             >
               <Navigation size={18} />
               Google Maps
             </Button>
             <Button 
-              onClick={() => openWaze(selectedGym.lat!, selectedGym.lng!)}
+              onClick={() => openWaze(selectedGym.address!)}
               variant="secondary"
               className="flex-1"
             >
