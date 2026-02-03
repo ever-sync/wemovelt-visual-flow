@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,21 @@ import {
 } from "@/components/ui/dialog";
 import { useGyms } from "@/hooks/useGyms";
 import { Loader2 } from "lucide-react";
+
+const MUSCLES = [
+  { value: "Peitoral", label: "Peitoral" },
+  { value: "Costas", label: "Costas" },
+  { value: "Bíceps", label: "Bíceps" },
+  { value: "Tríceps", label: "Tríceps" },
+  { value: "Ombros", label: "Ombros" },
+  { value: "Quadríceps", label: "Quadríceps" },
+  { value: "Posterior", label: "Posterior" },
+  { value: "Glúteos", label: "Glúteos" },
+  { value: "Panturrilha", label: "Panturrilha" },
+  { value: "Abdômen", label: "Abdômen" },
+  { value: "Core", label: "Core" },
+  { value: "Antebraço", label: "Antebraço" },
+];
 
 interface Equipment {
   id: string;
@@ -72,6 +88,7 @@ const EquipmentForm = ({
     difficulty: "",
     gym_id: "",
     image_url: "",
+    muscles: [] as string[],
   });
 
   useEffect(() => {
@@ -84,6 +101,7 @@ const EquipmentForm = ({
         difficulty: equipment.difficulty || "",
         gym_id: equipment.gym_id || "",
         image_url: equipment.image_url || "",
+        muscles: equipment.muscles || [],
       });
     } else {
       setFormData({
@@ -94,9 +112,19 @@ const EquipmentForm = ({
         difficulty: "",
         gym_id: "",
         image_url: "",
+        muscles: [],
       });
     }
   }, [equipment, open]);
+
+  const toggleMuscle = (muscle: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      muscles: prev.muscles.includes(muscle)
+        ? prev.muscles.filter((m) => m !== muscle)
+        : [...prev.muscles, muscle],
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +137,7 @@ const EquipmentForm = ({
       difficulty: formData.difficulty || null,
       gym_id: formData.gym_id || null,
       image_url: formData.image_url || null,
+      muscles: formData.muscles.length > 0 ? formData.muscles : null,
       ...(equipment?.id && { id: equipment.id }),
     };
     
@@ -145,6 +174,27 @@ const EquipmentForm = ({
               placeholder="Descreva o equipamento e como usar..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Músculos Trabalhados</Label>
+            <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
+              {MUSCLES.map((muscle) => (
+                <div key={muscle.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`muscle-${muscle.value}`}
+                    checked={formData.muscles.includes(muscle.value)}
+                    onCheckedChange={() => toggleMuscle(muscle.value)}
+                  />
+                  <Label
+                    htmlFor={`muscle-${muscle.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {muscle.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
