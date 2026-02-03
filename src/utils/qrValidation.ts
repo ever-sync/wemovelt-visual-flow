@@ -1,10 +1,6 @@
-import { getGymById, getEquipmentById } from "@/data/gyms";
-
 export interface QRCodeData {
   gymId: string;
   equipmentId: string;
-  gymName?: string;
-  equipmentName?: string;
 }
 
 export interface QRValidationResult {
@@ -16,10 +12,13 @@ export interface QRValidationResult {
 const QR_PREFIX = "wemovelt://";
 
 /**
- * Validates and parses a WEMOVELT QR Code
+ * Parses a WEMOVELT QR Code and extracts gym/equipment IDs
  * Expected format: wemovelt://gym/{gymId}/equipment/{equipmentId}
+ * 
+ * Note: This only parses the QR code format. Validation against the database
+ * should be done separately using the extracted IDs.
  */
-export const validateQRCode = (rawData: string): QRValidationResult => {
+export const parseQRCode = (rawData: string): QRValidationResult => {
   // Check if it starts with our prefix
   if (!rawData.startsWith(QR_PREFIX)) {
     return {
@@ -43,21 +42,20 @@ export const validateQRCode = (rawData: string): QRValidationResult => {
   const gymId = parts[1];
   const equipmentId = parts[3];
 
-  // Validate gym exists
-  const gym = getGymById(gymId);
-  if (!gym) {
+  // Basic UUID format validation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (!uuidRegex.test(gymId)) {
     return {
       valid: false,
-      error: "Academia não encontrada",
+      error: "ID da academia inválido",
     };
   }
 
-  // Validate equipment exists in this gym
-  const equipment = getEquipmentById(equipmentId, gymId);
-  if (!equipment) {
+  if (!uuidRegex.test(equipmentId)) {
     return {
       valid: false,
-      error: "Equipamento não encontrado nesta academia",
+      error: "ID do equipamento inválido",
     };
   }
 
@@ -66,8 +64,6 @@ export const validateQRCode = (rawData: string): QRValidationResult => {
     data: {
       gymId,
       equipmentId,
-      gymName: gym.name,
-      equipmentName: equipment.name,
     },
   };
 };
