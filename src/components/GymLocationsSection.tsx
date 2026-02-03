@@ -13,7 +13,8 @@ const GymLocationsSection = () => {
   const selectedGym = selectedLocation ? gyms.find(g => g.id === selectedLocation) : null;
 
   const openGoogleMaps = (lat: number, lng: number) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    const destination = encodeURIComponent(`${lat},${lng}`);
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
     window.open(url, '_blank');
   };
 
