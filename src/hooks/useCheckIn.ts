@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +11,6 @@ export interface CheckIn {
   id: string;
   user_id: string;
   gym_id: string | null;
-  equipment_id: string | null;
   method: string;
   lat: number | null;
   lng: number | null;
@@ -33,13 +32,7 @@ export interface UseCheckInReturn {
   weeklyPercentage: number;
   todayCheckedIn: boolean;
   weekData: WeekDay[];
-  registerCheckIn: (
-    method: "qr" | "geo",
-    gymId: string,
-    equipmentId?: string,
-    lat?: number,
-    lng?: number
-  ) => Promise<CheckIn>;
+  registerCheckIn: (gymId: string, lat?: number, lng?: number) => Promise<CheckIn>;
   getCheckInsForDate: (date: string) => CheckIn[];
 }
 
@@ -93,7 +86,7 @@ export const useCheckIn = (): UseCheckInReturn => {
 
       const { data, error } = await supabase
         .from("check_ins")
-        .select("*")
+        .select("id, user_id, gym_id, method, lat, lng, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -104,18 +97,14 @@ export const useCheckIn = (): UseCheckInReturn => {
     staleTime: STALE_TIME,
   });
 
-  // Register check-in mutation
+  // Register check-in mutation (GPS only)
   const registerMutation = useMutation({
     mutationFn: async ({
-      method,
       gymId,
-      equipmentId,
       lat,
       lng,
     }: {
-      method: "qr" | "geo";
       gymId: string;
-      equipmentId?: string;
       lat?: number;
       lng?: number;
     }) => {
@@ -126,8 +115,7 @@ export const useCheckIn = (): UseCheckInReturn => {
         .insert({
           user_id: user.id,
           gym_id: gymId,
-          equipment_id: equipmentId || null,
-          method,
+          method: "geo",
           lat: lat || null,
           lng: lng || null,
         })
@@ -149,14 +137,8 @@ export const useCheckIn = (): UseCheckInReturn => {
   });
 
   const registerCheckIn = useCallback(
-    async (
-      method: "qr" | "geo",
-      gymId: string,
-      equipmentId?: string,
-      lat?: number,
-      lng?: number
-    ): Promise<CheckIn> => {
-      return registerMutation.mutateAsync({ method, gymId, equipmentId, lat, lng });
+    async (gymId: string, lat?: number, lng?: number): Promise<CheckIn> => {
+      return registerMutation.mutateAsync({ gymId, lat, lng });
     },
     [registerMutation]
   );
