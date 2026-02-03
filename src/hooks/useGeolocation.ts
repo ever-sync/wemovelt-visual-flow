@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { validateGeoLocation, type GeoPosition } from "@/utils/geoValidation";
-import type { Gym } from "@/data/gyms";
+import { useState, useCallback } from "react";
+import { type GeoPosition } from "@/utils/geoValidation";
 
 export type GeoStatus = "idle" | "requesting" | "success" | "error";
 
@@ -8,9 +7,6 @@ export interface UseGeolocationReturn {
   status: GeoStatus;
   position: GeoPosition | null;
   error: string | null;
-  nearestGym: Gym | null;
-  distance: number | null;
-  isWithinRadius: boolean;
   requestLocation: () => void;
   reset: () => void;
 }
@@ -19,17 +15,11 @@ export const useGeolocation = (): UseGeolocationReturn => {
   const [status, setStatus] = useState<GeoStatus>("idle");
   const [position, setPosition] = useState<GeoPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [nearestGym, setNearestGym] = useState<Gym | null>(null);
-  const [distance, setDistance] = useState<number | null>(null);
-  const [isWithinRadius, setIsWithinRadius] = useState(false);
 
   const reset = useCallback(() => {
     setStatus("idle");
     setPosition(null);
     setError(null);
-    setNearestGym(null);
-    setDistance(null);
-    setIsWithinRadius(false);
   }, []);
 
   const requestLocation = useCallback(() => {
@@ -49,23 +39,7 @@ export const useGeolocation = (): UseGeolocationReturn => {
           lng: pos.coords.longitude,
         };
         setPosition(geoPos);
-
-        // Validate against gyms
-        const result = validateGeoLocation(geoPos);
-        
-        if (result.gym) {
-          setNearestGym(result.gym);
-          setDistance(result.distance ?? null);
-        }
-
-        if (result.valid) {
-          setIsWithinRadius(true);
-          setStatus("success");
-        } else {
-          setIsWithinRadius(false);
-          setStatus("error");
-          setError(result.error ?? "Você não está próximo de uma academia");
-        }
+        setStatus("success");
       },
       (err) => {
         setStatus("error");
@@ -95,9 +69,6 @@ export const useGeolocation = (): UseGeolocationReturn => {
     status,
     position,
     error,
-    nearestGym,
-    distance,
-    isWithinRadius,
     requestLocation,
     reset,
   };
