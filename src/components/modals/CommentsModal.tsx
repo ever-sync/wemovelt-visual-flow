@@ -9,6 +9,8 @@ import { ptBR } from "date-fns/locale";
 import { useComments, Comment } from "@/hooks/useComments";
 import { useAuth } from "@/contexts/AuthContext";
 import { Post } from "@/hooks/usePosts";
+import { commentSchema, validateSafe } from "@/lib/validations";
+import { toast } from "sonner";
 
 interface CommentsModalProps {
   open: boolean;
@@ -28,7 +30,15 @@ const CommentsModal = ({ open, onOpenChange, post }: CommentsModalProps) => {
   } = useComments(post?.id || null);
 
   const handleSubmit = async () => {
-    if (!newComment.trim() || !user) return;
+    // Validate comment before submitting
+    const result = validateSafe(commentSchema, newComment.trim());
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      toast.error(errorResult.error);
+      return;
+    }
+
+    if (!user) return;
 
     try {
       await addComment({ content: newComment.trim() });

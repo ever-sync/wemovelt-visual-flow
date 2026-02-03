@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOfWeek, endOfWeek, format } from "date-fns";
 import { toast } from "sonner";
+import { goalSchema, validateOrThrow } from "@/lib/validations";
+
+const STALE_TIME = 1000 * 60 * 5; // 5 minutes for goals
 
 export interface Goal {
   id: string;
@@ -41,6 +44,7 @@ export const useGoals = () => {
       return data as Goal[];
     },
     enabled: !!user,
+    staleTime: STALE_TIME,
   });
 
   const { data: goalsWithProgress = [] } = useQuery({
@@ -88,6 +92,7 @@ export const useGoals = () => {
       return goalsProgress;
     },
     enabled: !!user && goals.length > 0,
+    staleTime: STALE_TIME,
   });
 
   const createGoalMutation = useMutation({
@@ -98,6 +103,9 @@ export const useGoals = () => {
       title: string;
     }) => {
       if (!user) throw new Error("User not authenticated");
+
+      // Validate goal data
+      validateOrThrow(goalSchema, goalData);
       
       const { data, error } = await supabase
         .from("user_goals")

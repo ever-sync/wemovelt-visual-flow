@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { startOfWeek, format, addDays, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+const STALE_TIME = 1000 * 60; // 1 minute for check-ins
+
 export interface CheckIn {
   id: string;
   user_id: string;
@@ -99,6 +101,7 @@ export const useCheckIn = (): UseCheckInReturn => {
       return data as CheckIn[];
     },
     enabled: !!user,
+    staleTime: STALE_TIME,
   });
 
   // Register check-in mutation

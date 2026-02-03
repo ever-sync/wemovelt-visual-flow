@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+const STALE_TIME = 1000 * 30; // 30 seconds for notifications
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -34,6 +36,7 @@ export const useNotifications = () => {
     },
     enabled: !!user,
     refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: STALE_TIME,
   });
 
   const unreadCount = notifications.filter(n => !n.read).length;

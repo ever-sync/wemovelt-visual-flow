@@ -6,6 +6,8 @@ import { Image, Camera, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
 import ImageUpload from "@/components/ImageUpload";
+import { postContentSchema, validateSafe } from "@/lib/validations";
+import { toast } from "sonner";
 
 interface PostModalProps {
   open: boolean;
@@ -20,7 +22,15 @@ const PostModal = ({ open, onOpenChange }: PostModalProps) => {
   const [showImageUpload, setShowImageUpload] = useState(false);
 
   const handlePost = async () => {
-    if (!content.trim() || !user) return;
+    // Validate content before submitting
+    const result = validateSafe(postContentSchema, content.trim());
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      toast.error(errorResult.error);
+      return;
+    }
+
+    if (!user) return;
 
     try {
       await createPost({ content: content.trim(), imageFile: selectedImage });

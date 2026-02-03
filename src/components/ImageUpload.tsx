@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Image, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { imageFileSchema, validateSafe } from "@/lib/validations";
 
 interface ImageUploadProps {
   onImageSelect: (file: File | null) => void;
@@ -15,15 +16,15 @@ const ImageUpload = ({ onImageSelect, selectedImage, className = "" }: ImageUplo
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        alert("Por favor, selecione apenas imagens.");
-        return;
-      }
+      // Validate file with Zod schema
+      const result = validateSafe(imageFileSchema, {
+        size: file.size,
+        type: file.type,
+      });
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert("A imagem deve ter no máximo 5MB.");
+      if (!result.success) {
+        const errorResult = result as { success: false; error: string };
+        alert(errorResult.error);
         return;
       }
 

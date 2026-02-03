@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, startOfWeek, endOfWeek, addDays, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
+import { habitTypeSchema, validateOrThrow } from "@/lib/validations";
+
+const STALE_TIME_TODAY = 1000 * 60; // 1 minute for today's habits
+const STALE_TIME_WEEKLY = 1000 * 60 * 5; // 5 minutes for weekly data
 
 export interface HabitLog {
   id: string;
@@ -78,6 +82,7 @@ export const useHabits = () => {
       return data as HabitLog[];
     },
     enabled: !!user,
+    staleTime: STALE_TIME_TODAY,
   });
 
   // Get weekly logs for stats
@@ -100,6 +105,7 @@ export const useHabits = () => {
       return data as HabitLog[];
     },
     enabled: !!user,
+    staleTime: STALE_TIME_WEEKLY,
   });
 
   // Get all logs for streak calculation (last 30 days)
@@ -121,6 +127,7 @@ export const useHabits = () => {
       return data as HabitLog[];
     },
     enabled: !!user,
+    staleTime: STALE_TIME_WEEKLY,
   });
 
   // Calculate weekly stats for each habit type
@@ -150,6 +157,9 @@ export const useHabits = () => {
   const toggleHabitMutation = useMutation({
     mutationFn: async ({ habitType, date = today }: { habitType: string; date?: string }) => {
       if (!user) throw new Error("User not authenticated");
+
+      // Validate habit type
+      validateOrThrow(habitTypeSchema, habitType);
       
       // Check if log exists
       const { data: existing } = await supabase

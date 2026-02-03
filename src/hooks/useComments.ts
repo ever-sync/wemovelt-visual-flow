@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { commentSchema, validateOrThrow } from "@/lib/validations";
+import { sanitizeText } from "@/lib/sanitize";
+
+const STALE_TIME = 1000 * 30; // 30 seconds for social content
 
 export interface CommentProfile {
   id: string;
@@ -59,9 +63,10 @@ export const useComments = (postId: string | null) => {
       return commentsData.map((comment) => ({
         ...comment,
         profiles: profilesMap.get(comment.user_id) || null,
-      })) as Comment[];
+    })) as Comment[];
     },
     enabled: !!postId,
+    staleTime: STALE_TIME,
   });
 
   // Add comment mutation
@@ -70,12 +75,16 @@ export const useComments = (postId: string | null) => {
       if (!user) throw new Error("Usuário não autenticado");
       if (!postId) throw new Error("Post não selecionado");
 
+      // Validate and sanitize content
+      const sanitizedContent = sanitizeText(content);
+      validateOrThrow(commentSchema, sanitizedContent);
+
       const { data, error } = await supabase
         .from("post_comments")
         .insert({
           post_id: postId,
           user_id: user.id,
-          content,
+          content: sanitizedContent,
           parent_id: parentId || null,
         })
         .select()

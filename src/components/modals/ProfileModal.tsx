@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import AvatarUpload from "@/components/AvatarUpload";
+import { profileSchema, validateSafe } from "@/lib/validations";
+import { sanitizeText, sanitizeInteger } from "@/lib/sanitize";
 
 interface ProfileModalProps {
   open: boolean;
@@ -58,21 +60,34 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   }, [profile, open]);
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error("Por favor, informe seu nome");
+    // Sanitize all inputs
+    const sanitizedData = {
+      name: sanitizeText(formData.name),
+      age: sanitizeInteger(formData.age, 13, 120),
+      weight: sanitizeInteger(formData.weight, 20, 500),
+      height: sanitizeInteger(formData.height, 50, 300),
+      goal: formData.goal || null,
+      experience_level: formData.experience_level || null,
+    };
+
+    // Validate with Zod
+    const result = validateSafe(profileSchema, sanitizedData);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      toast.error(errorResult.error);
       return;
     }
 
     setSaving(true);
     try {
       const { error } = await updateProfile({
-        name: formData.name.trim(),
+        name: sanitizedData.name,
         avatar_url: formData.avatar_url,
-        age: formData.age ? Number(formData.age) : null,
-        weight: formData.weight ? Number(formData.weight) : null,
-        height: formData.height ? Number(formData.height) : null,
-        goal: formData.goal || null,
-        experience_level: formData.experience_level || null,
+        age: sanitizedData.age,
+        weight: sanitizedData.weight,
+        height: sanitizedData.height,
+        goal: sanitizedData.goal,
+        experience_level: sanitizedData.experience_level,
       });
 
       if (error) throw error;

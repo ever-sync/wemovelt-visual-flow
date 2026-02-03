@@ -2,8 +2,11 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { postContentSchema, imageFileSchema, validateOrThrow } from "@/lib/validations";
+import { sanitizeText } from "@/lib/sanitize";
 
 const PAGE_SIZE = 10;
+const STALE_TIME = 1000 * 30; // 30 seconds for social content
 
 export interface PostProfile {
   id: string;
@@ -98,6 +101,7 @@ export const usePosts = () => {
       return lastPage && lastPage.length === PAGE_SIZE ? pages.length : undefined;
     },
     initialPageParam: 0,
+    staleTime: STALE_TIME,
   });
 
   // Flatten pages into single array
@@ -132,6 +136,18 @@ export const usePosts = () => {
     mutationFn: async ({ content, imageFile }: { content: string; imageFile?: File | null }) => {
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validate and sanitize content
+      const sanitizedContent = sanitizeText(content);
+      validateOrThrow(postContentSchema, sanitizedContent);
+
+      // Validate image if present
+      if (imageFile) {
+        validateOrThrow(imageFileSchema, {
+          size: imageFile.size,
+          type: imageFile.type,
+        });
+      }
+
       let imageUrl: string | null = null;
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
@@ -141,7 +157,7 @@ export const usePosts = () => {
         .from("posts")
         .insert({
           user_id: user.id,
-          content,
+          content: sanitizedContent,
           image_url: imageUrl,
         })
         .select()

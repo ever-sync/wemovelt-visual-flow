@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Target, CheckCircle2, Dumbbell, Droplets, Moon, Apple, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useGoals } from "@/hooks/useGoals";
+import { goalSchema, validateSafe } from "@/lib/validations";
+import { toast } from "sonner";
 
 interface GoalModalProps {
   open: boolean;
@@ -67,18 +69,28 @@ const GoalModal = ({ open, onOpenChange }: GoalModalProps) => {
 
   const handleCreate = async () => {
     if (!selectedType || !selectedTarget || !selectedGoalType) return;
-    
-    const title = selectedType === "workout" 
+
+    const title = selectedType === "workout"
       ? `Treinar ${selectedTarget}x/semana`
       : `${selectedGoalType.label} ${selectedTarget} dias/semana`;
+
+    const goalData = {
+      type: selectedType,
+      target: selectedTarget,
+      unit: selectedGoalType.unit,
+      title,
+    };
+
+    // Validate goal data
+    const result = validateSafe(goalSchema, goalData);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      toast.error(errorResult.error);
+      return;
+    }
     
     try {
-      await createGoal({
-        type: selectedType,
-        target: selectedTarget,
-        unit: selectedGoalType.unit,
-        title,
-      });
+      await createGoal(goalData);
       setStep("success");
     } catch (error) {
       console.error("Error creating goal:", error);
