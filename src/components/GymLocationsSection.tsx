@@ -1,12 +1,14 @@
-import { MapPin, Loader2, Navigation } from "lucide-react";
+import { MapPin, Loader2, Navigation, LocateFixed } from "lucide-react";
 import { useState } from "react";
 import { useGyms } from "@/hooks/useGyms";
 import LeafletMapDisplay from "./LeafletMapDisplay";
 import { Button } from "./ui/button";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 const GymLocationsSection = () => {
   const { gyms, isLoading } = useGyms();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const { status: geoStatus, position: userPosition, requestLocation } = useGeolocation();
   
   const selectedGym = selectedLocation ? gyms.find(g => g.id === selectedLocation) : null;
 
@@ -148,7 +150,21 @@ const GymLocationsSection = () => {
             gyms={gyms}
             selectedId={selectedLocation}
             onMarkerClick={setSelectedLocation}
+            userPosition={userPosition}
           />
+          {/* My Location button */}
+          <button
+            onClick={requestLocation}
+            disabled={geoStatus === 'requesting'}
+            className="absolute top-2 right-2 z-[1000] bg-card/90 backdrop-blur-sm border border-border rounded-lg p-2 shadow-md hover:bg-card transition-colors disabled:opacity-60"
+            title="Minha localização"
+          >
+            {geoStatus === 'requesting' ? (
+              <Loader2 size={18} className="text-primary animate-spin" />
+            ) : (
+              <LocateFixed size={18} className={geoStatus === 'success' ? 'text-primary' : 'text-muted-foreground'} />
+            )}
+          </button>
         </div>
 
         {/* Location cards */}
