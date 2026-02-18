@@ -1,84 +1,92 @@
 
-## Objetivo
+## Mostrar raio de check-in no mapa
 
-Duas melhorias integradas:
+### Objetivo
 
-1. **Seção de academias**: Ao clicar em "Minha localização" no mapa, mostrar automaticamente a academia mais próxima destacada na lista, com a distância em metros exibida em cada card.
-2. **Check-in**: O modal já usa GPS automaticamente — vamos melhorar o feedback visual durante a espera, mostrando a academia que está sendo verificada em tempo real.
-
----
-
-## O que será alterado
-
-### 1. `src/components/GymLocationsSection.tsx`
-
-- Usar `getGymsWithDistance` (já existe no hook `useGyms`) para calcular a distância de cada academia quando a localização do usuário estiver disponível.
-- Exibir a distância em metros em cada card da lista (ex: `📍 1.2 km` ou `📍 850 m`).
-- Destacar automaticamente a academia mais próxima com um badge **"Mais Próxima 🏆"** quando a localização estiver ativa.
-- Ao obter a localização, selecionar automaticamente a academia mais próxima no mapa (centralizar o marcador).
-- Ordenar a lista pela distância quando a localização estiver disponível.
-
-**Exemplo visual do card melhorado:**
-```text
-┌─────────────────────────────────────────────┐
-│ 🏆 [Ícone] Academia Centro          850 m   │
-│            Rua das Flores, 100    MAIS PRÓX. │
-└─────────────────────────────────────────────┘
-```
-
-### 2. `src/components/modals/CheckInModal.tsx`
-
-O modal **já** usa GPS automaticamente ao abrir — nenhuma mudança de lógica é necessária. A melhoria é visual:
-
-- Durante o estado `"checking"`, mostrar o nome da academia mais próxima detectada em tempo real (assim que a posição for obtida e antes de submeter).
-- Exibir a distância atual enquanto verifica.
-- Isso dá feedback imediato ao usuário antes da confirmação final.
+Desenhar um círculo semi-transparente ao redor de cada marcador de academia no mapa Leaflet, representando o raio de check-in configurado (campo `radius` em metros). Isso permite que o usuário visualize claramente a área em que o check-in é válido.
 
 ---
 
-## Implementação técnica
+### O que será alterado
 
-### GymLocationsSection.tsx
+**Arquivo único:** `src/components/LeafletMapDisplay.tsx`
+
+#### 1. Atualizar a interface `Gym`
+
+O componente atualmente recebe apenas `id`, `name`, `lat` e `lng`. Precisamos adicionar `radius`:
 
 ```typescript
-// Quando userPosition muda, calcular academias com distância
-const gymsWithDistance = userPosition
-  ? getGymsWithDistance(userPosition)
-  : gyms.map(g => ({ ...g, distance: null }));
-
-const nearestGym = gymsWithDistance[0]; // Já ordenado por distância
-
-// Auto-selecionar a mais próxima ao obter localização
-useEffect(() => {
-  if (userPosition && nearestGym) {
-    setSelectedLocation(nearestGym.id);
-  }
-}, [userPosition]);
+interface Gym {
+  id: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  radius: number | null; // novo campo
+}
 ```
 
-### CheckInModal.tsx
+#### 2. Adicionar ref para os círculos de raio
+
+Um `Map` de refs separado para armazenar os círculos das academias (assim como já existe `markersRef` para os marcadores):
 
 ```typescript
-// Mostrar academia encontrada durante o "checking"
-const nearestGymDuringCheck = geo.position && !gymsLoading
-  ? getNearestGym(geo.position)
-  : null;
+const gymCirclesRef = useRef<Map<string, L.Circle>>(new Map());
+```
 
-// No JSX do step "checking":
-{nearestGymDuringCheck && (
-  <p className="text-sm text-primary">
-    📍 {nearestGymDuringCheck.gym.name} — {nearestGymDuringCheck.distance}m
-  </p>
-)}
+#### 3. Criar círculo de raio junto com cada marcador
+
+No `useEffect` de "Update gym markers", após criar cada marcador, adicionar um `L.circle` com o raio da academia:
+
+```typescript
+// Círculo de raio de check-in
+if (gym.radius && gym.radius > 0) {
+  const isSelected = selectedId === gym.id;
+  const circle = L.circle([gym.lat!, gym.lng!], {
+    radius: gym.radius,            // raio em metros (ex: 50m)
+    color: isSelected ? '#f97316' : '#f9731680',
+    fillColor: isSelected ? '#f97316' : '#f97316',
+    fillOpacity: isSelected ? 0.15 : 0.08,
+    weight: isSelected ? 2 : 1,
+    dashArray: isSelected ? undefined : '4 4',
+  }).addTo(map);
+
+  gymCirclesRef.current.set(gym.id, circle);
+}
+```
+
+#### 4. Limpar círculos junto com os marcadores
+
+No início do useEffect, antes de recriar os marcadores:
+
+```typescript
+gymCirclesRef.current.forEach(c => c.remove());
+gymCirclesRef.current.clear();
 ```
 
 ---
 
-## Resumo dos arquivos modificados
+### Comportamento visual
 
-| Arquivo | Mudança |
+| Estado da academia | Cor da borda | Preenchimento | Borda |
+|---|---|---|---|
+| Normal | Laranja translúcido | Laranja 8% opacidade | Pontilhada, 1px |
+| Selecionada | Laranja sólido | Laranja 15% opacidade | Sólida, 2px |
+
+O círculo muda de visual junto com o marcador quando a academia é selecionada (clique no marcador ou na lista).
+
+---
+
+### Dados já disponíveis
+
+O hook `useGyms` já retorna o campo `radius` de cada academia. O componente `GymLocationsSection` já passa o array `gyms` completo para `LeafletMapDisplay`, que inclui o `radius`. Só precisamos adicionar o campo na interface local do componente e usar o valor ao criar o círculo.
+
+---
+
+### Resumo técnico
+
+| Item | Detalhe |
 |---|---|
-| `src/components/GymLocationsSection.tsx` | Distância em cada card, badge "Mais Próxima", auto-seleção, ordenação por distância |
-| `src/components/modals/CheckInModal.tsx` | Feedback em tempo real da academia detectada durante verificação |
-
-Nenhuma mudança no banco de dados ou lógica de check-in — tudo já está implementado no hook `useGyms` com `getGymsWithDistance` e `getNearestGym`.
+| Arquivo modificado | `src/components/LeafletMapDisplay.tsx` |
+| Mudanças no banco | Nenhuma — campo `radius` já existe na tabela `gyms` |
+| Mudanças em outros componentes | Nenhuma |
+| Dependências novas | Nenhuma |
