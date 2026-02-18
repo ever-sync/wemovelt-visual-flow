@@ -117,7 +117,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
     }, 100);
   };
 
-  // Get nearest gym info for error display
+  // Get nearest gym info for error/checking display
   const nearestGymInfo =
     geo.position && !gymsLoading ? getNearestGym(geo.position) : null;
 
@@ -172,6 +172,12 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
             <p className="text-muted-foreground text-center text-sm">
               Aguarde enquanto confirmamos sua presença na academia
             </p>
+            {nearestGymInfo && !isSubmitting && (
+              <div className="mt-4 bg-secondary rounded-xl px-4 py-2 text-center">
+                <p className="text-sm font-semibold text-primary">📍 {nearestGymInfo.gym.name}</p>
+                <p className="text-xs text-muted-foreground">{nearestGymInfo.distance}m de distância</p>
+              </div>
+            )}
           </div>
         )}
 

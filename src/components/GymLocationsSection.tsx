@@ -1,14 +1,26 @@
 import { MapPin, Loader2, Navigation, LocateFixed } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGyms } from "@/hooks/useGyms";
 import LeafletMapDisplay from "./LeafletMapDisplay";
 import { Button } from "./ui/button";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const GymLocationsSection = () => {
-  const { gyms, isLoading } = useGyms();
+  const { gyms, isLoading, getGymsWithDistance } = useGyms();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const { status: geoStatus, position: userPosition, requestLocation } = useGeolocation();
+
+  const gymsWithDistance = userPosition
+    ? getGymsWithDistance(userPosition)
+    : gyms.map(g => ({ ...g, distance: null as number | null }));
+
+  const nearestGymId = gymsWithDistance[0]?.id ?? null;
+
+  useEffect(() => {
+    if (userPosition && nearestGymId) {
+      setSelectedLocation(nearestGymId);
+    }
+  }, [userPosition, nearestGymId]);
   
   const selectedGym = selectedLocation ? gyms.find(g => g.id === selectedLocation) : null;
 
@@ -169,27 +181,45 @@ const GymLocationsSection = () => {
 
         {/* Location cards */}
         <div className="p-4 space-y-2">
-          {gyms.map((gym) => (
-            <button
-              key={gym.id}
-              onClick={() => setSelectedLocation(gym.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                selectedLocation === gym.id
-                  ? "bg-primary/20 border border-primary"
-                  : "bg-secondary hover:bg-secondary/80"
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                selectedLocation === gym.id ? "wemovelt-gradient" : "bg-primary/20"
-              }`}>
-                <MapPin size={18} className={selectedLocation === gym.id ? "text-foreground" : "text-primary"} />
-              </div>
-              <div className="text-left">
-                <h4 className="font-bold text-sm">{gym.name}</h4>
-                <p className="text-xs text-muted-foreground">{gym.address || "Endereço não informado"}</p>
-              </div>
-            </button>
-          ))}
+          {gymsWithDistance.map((gym, index) => {
+            const isNearest = userPosition && index === 0;
+            const isSelected = selectedLocation === gym.id;
+            const distanceText = gym.distance !== null
+              ? gym.distance >= 1000
+                ? `${(gym.distance / 1000).toFixed(1)} km`
+                : `${gym.distance} m`
+              : null;
+
+            return (
+              <button
+                key={gym.id}
+                onClick={() => setSelectedLocation(gym.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                  isSelected
+                    ? "bg-primary/20 border border-primary"
+                    : "bg-secondary hover:bg-secondary/80"
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  isSelected ? "wemovelt-gradient" : "bg-primary/20"
+                }`}>
+                  <MapPin size={18} className={isSelected ? "text-foreground" : "text-primary"} />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <h4 className="font-bold text-sm truncate">{gym.name}</h4>
+                  <p className="text-xs text-muted-foreground truncate">{gym.address || "Endereço não informado"}</p>
+                  {isNearest && (
+                    <span className="text-xs font-semibold text-primary">🏆 Mais próxima</span>
+                  )}
+                </div>
+                {distanceText && (
+                  <span className={`text-xs font-bold flex-shrink-0 ${isNearest ? "text-primary" : "text-muted-foreground"}`}>
+                    {distanceText}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* GPS Navigation buttons */}
