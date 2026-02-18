@@ -205,51 +205,65 @@ const GymForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validationData = {
-      ...formData,
-      radius: parseInt(formData.radius) || 50,
-    };
+    try {
+      const validationData = {
+        ...formData,
+        radius: parseInt(formData.radius) || 50,
+      };
 
-    const result = gymFormSchema.safeParse(validationData);
+      const result = gymFormSchema.safeParse(validationData);
 
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0].toString()] = err.message;
-        }
-      });
-      setErrors(fieldErrors);
-      return;
-    }
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
 
-    // Build full address for GPS navigation
-    const streetPart = formData.number
-      ? `${formData.street}, ${formData.number}`
-      : formData.street;
-    const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
+      // Build full address for GPS navigation
+      const streetPart = formData.number
+        ? `${formData.street}, ${formData.number}`
+        : formData.street;
+      const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
 
-    // Geocode the address to get coordinates (non-blocking)
-    const coordinates = await geocodeAddress(fullAddress);
+      // Geocode the address to get coordinates (non-blocking — save proceeds even if it fails)
+      let coordinates: { lat: number; lng: number } | null = null;
+      try {
+        coordinates = await geocodeAddress(fullAddress);
+      } catch {
+        // Geocoding failed silently — coordinates remain null
+      }
 
-    const data = {
-      name: formData.name,
-      address: fullAddress,
-      lat: coordinates?.lat ?? null,
-      lng: coordinates?.lng ?? null,
-      radius: parseInt(formData.radius) || 50,
-      image_url: null,
-      ...(gym?.id && { id: gym.id }),
-    };
+      const data = {
+        name: formData.name,
+        address: fullAddress,
+        lat: coordinates?.lat ?? null,
+        lng: coordinates?.lng ?? null,
+        radius: parseInt(formData.radius) || 50,
+        image_url: null,
+        ...(gym?.id && { id: gym.id }),
+      };
 
-    if (!coordinates) {
+      if (!coordinates) {
+        toast({
+          title: "Salvo sem coordenadas GPS",
+          description: "A geocodificação falhou. A localização no mapa pode ser configurada manualmente depois.",
+        });
+      }
+
+      onSubmit(data);
+    } catch (err) {
+      console.error("Erro ao salvar academia:", err);
       toast({
-        title: "Salvo sem coordenadas GPS",
-        description: "A geocodificação falhou. A localização no mapa pode ser configurada manualmente depois.",
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
       });
     }
-
-    onSubmit(data);
   };
 
   const getCepIcon = () => {
