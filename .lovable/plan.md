@@ -1,19 +1,14 @@
 
-## Mostrar raio de check-in no mapa
+## Implementação: Círculos de Raio de Check-in no Mapa
 
-### Objetivo
-
-Desenhar um círculo semi-transparente ao redor de cada marcador de academia no mapa Leaflet, representando o raio de check-in configurado (campo `radius` em metros). Isso permite que o usuário visualize claramente a área em que o check-in é válido.
+### Arquivo a modificar
+`src/components/LeafletMapDisplay.tsx`
 
 ---
 
-### O que será alterado
+### Mudanças necessárias
 
-**Arquivo único:** `src/components/LeafletMapDisplay.tsx`
-
-#### 1. Atualizar a interface `Gym`
-
-O componente atualmente recebe apenas `id`, `name`, `lat` e `lng`. Precisamos adicionar `radius`:
+**1. Interface `Gym` — adicionar campo `radius`**
 
 ```typescript
 interface Gym {
@@ -21,72 +16,55 @@ interface Gym {
   name: string;
   lat: number | null;
   lng: number | null;
-  radius: number | null; // novo campo
+  radius: number | null; // NOVO
 }
 ```
 
-#### 2. Adicionar ref para os círculos de raio
+**2. Novo ref para os círculos das academias**
 
-Um `Map` de refs separado para armazenar os círculos das academias (assim como já existe `markersRef` para os marcadores):
-
+Linha 62 — junto com os refs existentes, adicionar:
 ```typescript
 const gymCirclesRef = useRef<Map<string, L.Circle>>(new Map());
 ```
 
-#### 3. Criar círculo de raio junto com cada marcador
+**3. No `useEffect` de atualização de marcadores (linhas 98–125)**
 
-No `useEffect` de "Update gym markers", após criar cada marcador, adicionar um `L.circle` com o raio da academia:
-
+- Antes de recriar os marcadores, limpar os círculos existentes:
 ```typescript
-// Círculo de raio de check-in
+gymCirclesRef.current.forEach(c => c.remove());
+gymCirclesRef.current.clear();
+```
+
+- Após criar cada marcador, desenhar o círculo de raio:
+```typescript
 if (gym.radius && gym.radius > 0) {
-  const isSelected = selectedId === gym.id;
   const circle = L.circle([gym.lat!, gym.lng!], {
-    radius: gym.radius,            // raio em metros (ex: 50m)
-    color: isSelected ? '#f97316' : '#f9731680',
-    fillColor: isSelected ? '#f97316' : '#f97316',
+    radius: gym.radius,
+    color: '#f97316',
+    fillColor: '#f97316',
     fillOpacity: isSelected ? 0.15 : 0.08,
     weight: isSelected ? 2 : 1,
     dashArray: isSelected ? undefined : '4 4',
   }).addTo(map);
-
   gymCirclesRef.current.set(gym.id, circle);
 }
-```
-
-#### 4. Limpar círculos junto com os marcadores
-
-No início do useEffect, antes de recriar os marcadores:
-
-```typescript
-gymCirclesRef.current.forEach(c => c.remove());
-gymCirclesRef.current.clear();
 ```
 
 ---
 
 ### Comportamento visual
 
-| Estado da academia | Cor da borda | Preenchimento | Borda |
+| Estado | Borda | Preenchimento | Estilo |
 |---|---|---|---|
-| Normal | Laranja translúcido | Laranja 8% opacidade | Pontilhada, 1px |
-| Selecionada | Laranja sólido | Laranja 15% opacidade | Sólida, 2px |
+| Normal | Laranja, 1px | 8% opacidade | Pontilhada |
+| Selecionada | Laranja, 2px | 15% opacidade | Sólida |
 
-O círculo muda de visual junto com o marcador quando a academia é selecionada (clique no marcador ou na lista).
-
----
-
-### Dados já disponíveis
-
-O hook `useGyms` já retorna o campo `radius` de cada academia. O componente `GymLocationsSection` já passa o array `gyms` completo para `LeafletMapDisplay`, que inclui o `radius`. Só precisamos adicionar o campo na interface local do componente e usar o valor ao criar o círculo.
+O círculo atualiza junto com o marcador toda vez que a academia é selecionada ou deseleccionada.
 
 ---
 
-### Resumo técnico
+### Nenhuma outra mudança necessária
 
-| Item | Detalhe |
-|---|---|
-| Arquivo modificado | `src/components/LeafletMapDisplay.tsx` |
-| Mudanças no banco | Nenhuma — campo `radius` já existe na tabela `gyms` |
-| Mudanças em outros componentes | Nenhuma |
-| Dependências novas | Nenhuma |
+- O campo `radius` já existe na tabela `gyms` no banco
+- O hook `useGyms` já busca e retorna `radius`
+- `GymLocationsSection` já passa o array completo de `gyms` para o componente — o `radius` já chega, só faltava a interface local e a lógica de renderização
