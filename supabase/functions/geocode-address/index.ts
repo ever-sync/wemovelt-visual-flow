@@ -59,14 +59,14 @@ serve(async (req) => {
       console.warn('No results found for address:', address);
       return new Response(
         JSON.stringify({ error: 'Endereço não encontrado. Verifique os dados.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.error('Geocoding API error:', data.status, data.error_message);
     return new Response(
       JSON.stringify({ error: `Geocoding failed: ${data.status}` }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
