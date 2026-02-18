@@ -91,6 +91,7 @@ const GymForm = ({
   const [cepStatus, setCepStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fieldsHighlighted, setFieldsHighlighted] = useState(false);
 
   const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     setGeocodeStatus("loading");
@@ -99,38 +100,17 @@ const GymForm = ({
         body: { address },
       });
 
-      if (error) {
-        console.error("Geocoding error:", error);
+      if (error || data?.error) {
+        console.warn("Geocoding failed (non-blocking):", error || data?.error);
         setGeocodeStatus("error");
-        toast({
-          title: "Erro ao obter coordenadas",
-          description: "Não foi possível geocodificar o endereço.",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      if (data.error) {
-        console.error("Geocoding API error:", data.error);
-        setGeocodeStatus("error");
-        toast({
-          title: "Endereço não encontrado",
-          description: data.error,
-          variant: "destructive",
-        });
         return null;
       }
 
       setGeocodeStatus("success");
       return { lat: data.lat, lng: data.lng };
     } catch (err) {
-      console.error("Geocoding exception:", err);
+      console.warn("Geocoding exception (non-blocking):", err);
       setGeocodeStatus("error");
-      toast({
-        title: "Erro de conexão",
-        description: "Não foi possível conectar ao serviço de geocodificação.",
-        variant: "destructive",
-      });
       return null;
     }
   };
@@ -195,6 +175,8 @@ const GymForm = ({
         state: data.uf || "",
       }));
       setCepStatus("success");
+      setFieldsHighlighted(true);
+      setTimeout(() => setFieldsHighlighted(false), 2000);
       setErrors((prev) => {
         const { cep, street, neighborhood, city, state, ...rest } = prev;
         return rest;
@@ -242,28 +224,30 @@ const GymForm = ({
     }
 
     // Build full address for GPS navigation
-    const streetPart = formData.number 
-      ? `${formData.street}, ${formData.number}` 
+    const streetPart = formData.number
+      ? `${formData.street}, ${formData.number}`
       : formData.street;
     const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
 
-    // Geocode the address to get coordinates
+    // Geocode the address to get coordinates (non-blocking)
     const coordinates = await geocodeAddress(fullAddress);
-    
-    if (!coordinates) {
-      // Geocoding failed, don't proceed
-      return;
-    }
 
     const data = {
       name: formData.name,
       address: fullAddress,
-      lat: coordinates.lat,
-      lng: coordinates.lng,
+      lat: coordinates?.lat ?? null,
+      lng: coordinates?.lng ?? null,
       radius: parseInt(formData.radius) || 50,
       image_url: null,
       ...(gym?.id && { id: gym.id }),
     };
+
+    if (!coordinates) {
+      toast({
+        title: "Salvo sem coordenadas GPS",
+        description: "A geocodificação falhou. A localização no mapa pode ser configurada manualmente depois.",
+      });
+    }
 
     onSubmit(data);
   };
@@ -332,7 +316,7 @@ const GymForm = ({
               onChange={(e) => setFormData({ ...formData, street: e.target.value })}
               placeholder="Preenchido automaticamente"
               disabled={cepStatus === "loading"}
-              className={errors.street ? "border-destructive" : ""}
+              className={`transition-colors duration-300 ${errors.street ? "border-destructive" : ""} ${fieldsHighlighted ? "bg-primary/5 border-primary/30" : ""}`}
             />
             {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
           </div>
@@ -357,7 +341,7 @@ const GymForm = ({
               onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
               placeholder="Preenchido automaticamente"
               disabled={cepStatus === "loading"}
-              className={errors.neighborhood ? "border-destructive" : ""}
+              className={`transition-colors duration-300 ${errors.neighborhood ? "border-destructive" : ""} ${fieldsHighlighted ? "bg-primary/5 border-primary/30" : ""}`}
             />
             {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
           </div>
@@ -371,7 +355,7 @@ const GymForm = ({
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="Cidade"
                 disabled={cepStatus === "loading"}
-                className={errors.city ? "border-destructive" : ""}
+                className={`transition-colors duration-300 ${errors.city ? "border-destructive" : ""} ${fieldsHighlighted ? "bg-primary/5 border-primary/30" : ""}`}
               />
               {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
             </div>
@@ -384,7 +368,7 @@ const GymForm = ({
                 placeholder="SP"
                 maxLength={2}
                 disabled={cepStatus === "loading"}
-                className={errors.state ? "border-destructive" : ""}
+                className={`transition-colors duration-300 ${errors.state ? "border-destructive" : ""} ${fieldsHighlighted ? "bg-primary/5 border-primary/30" : ""}`}
               />
               {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
             </div>
