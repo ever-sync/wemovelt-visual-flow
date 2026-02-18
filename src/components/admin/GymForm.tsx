@@ -87,6 +87,8 @@ const GymForm = ({
     city: "",
     state: "",
     radius: "50",
+    lat: "",
+    lng: "",
   });
   const [cepStatus, setCepStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -127,6 +129,8 @@ const GymForm = ({
         city: parsed.city,
         state: parsed.state,
         radius: gym.radius?.toString() || "50",
+        lat: gym.lat?.toString() || "",
+        lng: gym.lng?.toString() || "",
       });
       if (parsed.cep) setCepStatus("success");
     } else {
@@ -139,6 +143,8 @@ const GymForm = ({
         city: "",
         state: "",
         radius: "50",
+        lat: "",
+        lng: "",
       });
       setCepStatus("idle");
     }
@@ -230,12 +236,21 @@ const GymForm = ({
         : formData.street;
       const fullAddress = `${streetPart} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, ${formData.cep}`;
 
-      // Geocode the address to get coordinates (non-blocking — save proceeds even if it fails)
-      let coordinates: { lat: number; lng: number } | null = null;
-      try {
-        coordinates = await geocodeAddress(fullAddress);
-      } catch {
-        // Geocoding failed silently — coordinates remain null
+      // Use manual coordinates if provided, otherwise try geocoding
+      const manualLat = formData.lat ? parseFloat(formData.lat) : null;
+      const manualLng = formData.lng ? parseFloat(formData.lng) : null;
+
+      let coordinates: { lat: number; lng: number } | null =
+        manualLat !== null && manualLng !== null && !isNaN(manualLat) && !isNaN(manualLng)
+          ? { lat: manualLat, lng: manualLng }
+          : null;
+
+      if (!coordinates) {
+        try {
+          coordinates = await geocodeAddress(fullAddress);
+        } catch {
+          // Geocoding failed silently — coordinates remain null
+        }
       }
 
       const data = {
@@ -251,7 +266,7 @@ const GymForm = ({
       if (!coordinates) {
         toast({
           title: "Salvo sem coordenadas GPS",
-          description: "A geocodificação falhou. A localização no mapa pode ser configurada manualmente depois.",
+          description: "A geocodificação falhou. Configure as coordenadas manualmente nos campos Lat/Lng.",
         });
       }
 
@@ -404,6 +419,40 @@ const GymForm = ({
             <p className="text-xs text-muted-foreground">
               Distância máxima para permitir check-in por GPS
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" />
+              Coordenadas GPS (opcional)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Preencha manualmente se a geocodificação automática falhar. Use o{" "}
+              <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="underline">
+                Google Maps
+              </a>{" "}
+              para obter as coordenadas (clique direito no local → copie lat/lng).
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="lat" className="text-xs text-muted-foreground">Latitude</Label>
+                <Input
+                  id="lat"
+                  value={formData.lat}
+                  onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+                  placeholder="-23.5505"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="lng" className="text-xs text-muted-foreground">Longitude</Label>
+                <Input
+                  id="lng"
+                  value={formData.lng}
+                  onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
+                  placeholder="-46.6333"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">
