@@ -7,6 +7,7 @@ interface Gym {
   name: string;
   lat: number | null;
   lng: number | null;
+  radius: number | null;
 }
 
 interface LeafletMapDisplayProps {
@@ -60,6 +61,7 @@ const LeafletMapDisplay = ({ gyms, selectedId, onMarkerClick, userPosition }: Le
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
   const userCircleRef = useRef<L.Circle | null>(null);
+  const gymCirclesRef = useRef<Map<string, L.Circle>>(new Map());
 
   const validGyms = useMemo(() => gyms.filter(g => g.lat !== null && g.lng !== null), [gyms]);
 
@@ -99,9 +101,11 @@ const LeafletMapDisplay = ({ gyms, selectedId, onMarkerClick, userPosition }: Le
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear existing markers
+    // Clear existing markers and circles
     markersRef.current.forEach(m => m.remove());
     markersRef.current.clear();
+    gymCirclesRef.current.forEach(c => c.remove());
+    gymCirclesRef.current.clear();
 
     validGyms.forEach(gym => {
       const isSelected = selectedId === gym.id;
@@ -113,6 +117,18 @@ const LeafletMapDisplay = ({ gyms, selectedId, onMarkerClick, userPosition }: Le
         .addTo(map);
 
       markersRef.current.set(gym.id, marker);
+
+      if (gym.radius && gym.radius > 0) {
+        const circle = L.circle([gym.lat!, gym.lng!], {
+          radius: gym.radius,
+          color: '#f97316',
+          fillColor: '#f97316',
+          fillOpacity: isSelected ? 0.15 : 0.08,
+          weight: isSelected ? 2 : 1,
+          dashArray: isSelected ? undefined : '4 4',
+        }).addTo(map);
+        gymCirclesRef.current.set(gym.id, circle);
+      }
     });
 
     // Fit bounds
