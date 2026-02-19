@@ -80,7 +80,7 @@ const Habitos = () => {
   ].filter(type => isHabitCompleted(type)).length;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}>
       <Header />
       
       <main className="pt-[calc(5rem+env(safe-area-inset-top))] px-4 max-w-md mx-auto space-y-6">
