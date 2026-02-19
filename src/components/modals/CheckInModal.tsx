@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2, Navigation } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Navigation, Map } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useCheckIn } from "@/hooks/useCheckIn";
@@ -117,6 +117,24 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
     }, 100);
   };
 
+  const handleNavigate = (app: "google" | "waze") => {
+    if (!nearestGymInfo) return;
+    const { gym } = nearestGymInfo;
+    let url: string;
+    if (gym.lat && gym.lng) {
+      const coords = `${gym.lat},${gym.lng}`;
+      url = app === "google"
+        ? `https://www.google.com/maps/dir/?api=1&destination=${coords}`
+        : `https://waze.com/ul?ll=${coords}&navigate=yes`;
+    } else {
+      const dest = encodeURIComponent(gym.address ?? gym.name);
+      url = app === "google"
+        ? `https://www.google.com/maps/dir/?api=1&destination=${dest}`
+        : `https://waze.com/ul?q=${dest}`;
+    }
+    window.open(url, "_blank");
+  };
+
   // Get nearest gym info for error/checking display
   const nearestGymInfo =
     geo.position && !gymsLoading ? getNearestGym(geo.position) : null;
@@ -215,16 +233,35 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
             <p className="text-muted-foreground text-center text-sm mb-6">{errorMessage}</p>
 
             {nearestGymInfo && !nearestGymInfo.isWithinRadius && (
-              <div className="bg-secondary rounded-xl p-4 mb-4 w-full">
-                <p className="text-sm text-center">
-                  <Navigation size={16} className="inline mr-1" />
-                  Academia mais próxima: <strong>{nearestGymInfo.gym.name}</strong>
-                  <br />
-                  <span className="text-muted-foreground">
-                    a {nearestGymInfo.distance}m de distância
-                  </span>
-                </p>
-              </div>
+              <>
+                <div className="bg-secondary rounded-xl p-4 mb-3 w-full">
+                  <p className="text-sm text-center">
+                    <Navigation size={16} className="inline mr-1" />
+                    Academia mais próxima: <strong>{nearestGymInfo.gym.name}</strong>
+                    <br />
+                    <span className="text-muted-foreground">
+                      a {nearestGymInfo.distance}m de distância
+                    </span>
+                  </p>
+                </div>
+                <div className="flex gap-2 mb-2 w-full">
+                  <Button
+                    onClick={() => handleNavigate("google")}
+                    variant="outline"
+                    className="flex-1 rounded-xl text-xs gap-1"
+                  >
+                    <Map size={14} />
+                    Google Maps
+                  </Button>
+                  <Button
+                    onClick={() => handleNavigate("waze")}
+                    variant="outline"
+                    className="flex-1 rounded-xl text-xs gap-1"
+                  >
+                    🚗 Waze
+                  </Button>
+                </div>
+              </>
             )}
 
             <div className="flex gap-3">
