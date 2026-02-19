@@ -143,7 +143,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
   if (!user) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border mx-4 rounded-2xl max-w-sm z-[200]">
+      <DialogContent className="bg-card border-border mx-4 rounded-2xl max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">
             Fazer Check-in
@@ -164,7 +164,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border mx-4 rounded-2xl max-w-sm z-[200]">
+      <DialogContent className="bg-card border-border mx-4 rounded-2xl max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">
             Fazer Check-in
