@@ -10,6 +10,7 @@ import GymLocationsSection from "@/components/GymLocationsSection";
 import { useNavigate } from "react-router-dom";
 import { useCheckIn } from "@/hooks/useCheckIn";
 import { useAuth } from "@/contexts/AuthContext";
+import WhatsAppFAB from "@/components/WhatsAppFAB";
 
 const habits = [
   { icon: "💧", label: "Hidratação", color: "bg-blue-500/20" },
@@ -131,6 +132,7 @@ const Home = () => {
         <GymLocationsSection />
       </main>
 
+      <WhatsAppFAB />
       <BottomNav />
       <CheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
       <GoalModal open={goalOpen} onOpenChange={setGoalOpen} />
