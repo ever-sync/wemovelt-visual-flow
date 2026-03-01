@@ -1,50 +1,36 @@
 
-## Criar novo ícone PWA com halter de academia
 
-### O que será feito
+# Criar Pagina Publica de Politica de Privacidade
 
-Redesenhar o ícone do app (favicon SVG + PNGs do PWA) para mostrar um **halter/dumbbell** estilizado sobre o fundo gradiente laranja-vermelho da marca WEMOVELT.
+## Objetivo
+Criar uma rota publica `/privacidade` acessivel sem login, para ser usada como URL da politica de privacidade na Google Play Store e outros servicos externos.
 
-### Design do ícone
+## O que sera feito
 
-O halter será desenhado em SVG com traços brancos sobre o fundo circular gradiente existente (`#f97316` para `#dc2626`). O design será minimalista: uma barra horizontal com dois discos em cada extremidade.
+### 1. Criar pagina `src/pages/Privacidade.tsx`
+- Pagina publica (sem ProtectedRoute) com o mesmo conteudo do `PrivacyModal.tsx` existente
+- Layout responsivo, fundo escuro consistente com o tema do app
+- Logo WEMOVELT no topo
+- Botao para voltar ao app
 
-```text
-┌──────────────────┐
-│   ◼━━━━━━━◼      │
-│  ◼◼━━━━━━◼◼     │
-│   ◼━━━━━━━◼      │
-│                  │
-│  Fundo gradiente │
-│  laranja→vermelho│
-└──────────────────┘
-```
+### 2. Criar pagina `src/pages/Termos.tsx`
+- Mesma abordagem para os Termos de Uso (aproveitando o conteudo do `TermsModal.tsx`)
+- Util tambem para a Play Store
 
-### Arquivos modificados
+### 3. Adicionar rotas no `App.tsx`
+- `/privacidade` - rota publica (sem ProtectedRoute)
+- `/termos` - rota publica (sem ProtectedRoute)
 
-**1. `public/favicon.svg`** — Substituir o ícone atual (setas) por um halter/dumbbell branco sobre o mesmo fundo gradiente circular.
+## URL final
+Apos publicacao, a politica de privacidade estara acessivel em:
+- `https://wemovelt-visual-flow.lovable.app/privacidade`
+- `https://wemovelt-visual-flow.lovable.app/termos`
 
-O SVG do halter será composto por:
-- Círculo de fundo com gradiente laranja-vermelho (mantido)
-- Barra central horizontal (retângulo branco)
-- Dois pares de discos (retângulos arredondados brancos) nas extremidades
+Essas URLs podem ser usadas diretamente na Google Play Store.
 
-**2. `public/icon-180.png`, `public/icon-192.png`, `public/icon-512.png`** — Estes precisarão ser regenerados a partir do novo SVG. Como não é possível converter SVG para PNG diretamente no código, o favicon SVG será atualizado e os PNGs serão referenciados com o mesmo SVG via tag `<link>` no `index.html` como fallback. Alternativamente, podemos criar os ícones PNG usando um canvas no build ou orientar o usuário a gerar os PNGs externamente.
+## Detalhes tecnicos
+- Reutiliza o conteudo ja escrito nos modais existentes
+- Nao requer autenticacao
+- Nao requer alteracoes no banco de dados
+- Paginas estaticas, sem dependencias externas
 
-### Abordagem prática
-
-Como a limitação principal é gerar PNGs, a solução será:
-
-1. **Atualizar `public/favicon.svg`** com o novo design do halter
-2. **Atualizar `index.html`** para adicionar o SVG como apple-touch-icon fallback
-3. Os PNGs existentes continuarão funcionando até o usuário gerar novos (instruções serão fornecidas)
-
-### Detalhes técnicos do SVG
-
-O novo `favicon.svg` terá:
-- Viewbox: `0 0 32 32`
-- Fundo: círculo com gradiente `#f97316` → `#dc2626` (mesmo da marca)
-- Halter: elementos `rect` com `rx` para cantos arredondados, cor branca
-  - Barra central: retângulo fino horizontal
-  - Discos internos: retângulos mais largos e altos
-  - Discos externos: retângulos menores nas pontas
