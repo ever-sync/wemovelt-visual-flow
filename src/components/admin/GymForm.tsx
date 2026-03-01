@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +104,7 @@ const GymForm = ({
       });
 
       if (error || data?.error) {
-        console.warn("Geocoding failed (non-blocking):", error || data?.error);
+        logger.warn("Geocoding failed (non-blocking):", error || data?.error);
         setGeocodeStatus("error");
         return null;
       }
@@ -111,7 +112,7 @@ const GymForm = ({
       setGeocodeStatus("success");
       return { lat: data.lat, lng: data.lng };
     } catch (err) {
-      console.warn("Geocoding exception (non-blocking):", err);
+      logger.warn("Geocoding exception (non-blocking):", err);
       setGeocodeStatus("error");
       return null;
     }
