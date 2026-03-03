@@ -5,19 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useGyms } from "@/hooks/useGyms";
 import { supabase } from "@/integrations/supabase/client";
 import ImageUpload from "@/components/ImageUpload";
 import { Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -60,11 +52,6 @@ interface EquipmentFormProps {
   isLoading?: boolean;
 }
 
-const DIFFICULTIES = [
-  { value: "beginner", label: "Iniciante" },
-  { value: "intermediate", label: "Intermediário" },
-  { value: "advanced", label: "Avançado" },
-];
 
 const STEP_LABELS = ["Básico", "Detalhes", "Classificação", "Especificações"];
 
@@ -75,7 +62,6 @@ const EquipmentForm = ({
   onSubmit,
   isLoading,
 }: EquipmentFormProps) => {
-  const { gyms, isLoading: gymsLoading, error: gymsError } = useGyms();
   const [step, setStep] = useState(1);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -311,48 +297,6 @@ const EquipmentForm = ({
           {/* Step 3: Classificação */}
           {step === 3 && (
             <>
-              <div className="space-y-2">
-                <Label>Dificuldade</Label>
-                <Select
-                  value={formData.difficulty || undefined}
-                  onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIFFICULTIES.map((diff) => (
-                      <SelectItem key={diff.value} value={diff.value}>
-                        {diff.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Academia</Label>
-                {gymsError ? (
-                  <p className="text-sm text-destructive">Erro ao carregar academias. Tente reabrir o formulário.</p>
-                ) : (
-                  <Select
-                    value={formData.gym_id || "none"}
-                    onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
-                    disabled={gymsLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={gymsLoading ? "Carregando academias..." : "Vincular a uma academia"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhuma</SelectItem>
-                      {gyms?.map((gym) => (
-                        <SelectItem key={gym.id} value={gym.id}>
-                          {gym.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
               <div className="space-y-2">
                 <Label>Músculos Trabalhados</Label>
                 <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
