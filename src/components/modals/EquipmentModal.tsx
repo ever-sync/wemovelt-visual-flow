@@ -19,6 +19,9 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
 
   // Generate instructions based on equipment
   const getInstructions = () => {
+    if (equipment.usage_instructions) {
+      return equipment.usage_instructions.split('\n').filter(line => line.trim());
+    }
     if (equipment.description) {
       return [equipment.description];
     }
