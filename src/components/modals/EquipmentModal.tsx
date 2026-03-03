@@ -33,10 +33,16 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
     ];
   };
 
-  const tips = [
-    { icon: CheckCircle, text: "Mantenha a coluna neutra durante o exercício", type: "good" },
-    { icon: AlertTriangle, text: "Evite movimentos bruscos ou com impulso", type: "warning" },
-  ];
+  const tips = equipment.specifications?.length
+    ? equipment.specifications.map((spec, i) => ({
+        icon: i === 0 ? CheckCircle : AlertTriangle,
+        text: spec,
+        type: i === 0 ? "good" : "warning",
+      }))
+    : [
+        { icon: CheckCircle, text: "Mantenha a coluna neutra durante o exercício", type: "good" },
+        { icon: AlertTriangle, text: "Evite movimentos bruscos ou com impulso", type: "warning" },
+      ];
 
   const handleAddToWorkout = () => {
     setAddToWorkoutOpen(true);
