@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGyms } from "@/hooks/useGyms";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const MUSCLES = [
   { value: "Peitoral", label: "Peitoral" },
@@ -73,6 +73,8 @@ const DIFFICULTIES = [
   { value: "advanced", label: "Avançado" },
 ];
 
+const STEP_LABELS = ["Básico", "Classificação", "Especificações"];
+
 const EquipmentForm = ({
   open,
   onOpenChange,
@@ -81,6 +83,7 @@ const EquipmentForm = ({
   isLoading,
 }: EquipmentFormProps) => {
   const { gyms } = useGyms();
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -119,6 +122,7 @@ const EquipmentForm = ({
         specifications: [],
       });
     }
+    setStep(1);
   }, [equipment, open]);
 
   const toggleMuscle = (muscle: string) => {
@@ -130,9 +134,7 @@ const EquipmentForm = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {
     const filteredSpecs = formData.specifications.filter((s) => s.trim() !== "");
     const data = {
       ...formData,
@@ -146,189 +148,225 @@ const EquipmentForm = ({
       specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
       ...(equipment?.id && { id: equipment.id }),
     };
-    
     onSubmit(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
             {equipment ? "Editar Equipamento" : "Novo Equipamento"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Barra Fixa"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descreva o equipamento e como usar..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Músculos Trabalhados</Label>
-            <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
-              {MUSCLES.map((muscle) => (
-                <div key={muscle.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`muscle-${muscle.value}`}
-                    checked={formData.muscles.includes(muscle.value)}
-                    onCheckedChange={() => toggleMuscle(muscle.value)}
-                  />
-                  <Label
-                    htmlFor={`muscle-${muscle.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {muscle.label}
-                  </Label>
+        {/* Stepper indicator */}
+        <div className="flex items-center justify-between px-2">
+          {STEP_LABELS.map((label, i) => {
+            const stepNum = i + 1;
+            const isActive = step === stepNum;
+            const isDone = step > stepNum;
+            return (
+              <div key={label} className="flex flex-col items-center gap-1 flex-1">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : isDone
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {stepNum}
                 </div>
-              ))}
-            </div>
-          </div>
+                <span className={`text-xs ${isActive ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="video_url">Link do Vídeo (YouTube)</Label>
-            <Input
-              id="video_url"
-              type="url"
-              value={formData.video_url}
-              onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-              placeholder="https://youtube.com/watch?v=..."
-            />
-          </div>
+        <div className="space-y-4 py-2">
+          {/* Step 1: Básico */}
+          {step === 1 && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Barra Fixa"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descreva o equipamento e como usar..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="image_url">URL da Imagem</Label>
+                <Input
+                  id="image_url"
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="video_url">Link do Vídeo (YouTube)</Label>
+                <Input
+                  id="video_url"
+                  type="url"
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+            </>
+          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="image_url">URL da Imagem</Label>
-            <Input
-              id="image_url"
-              type="url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://exemplo.com/imagem.jpg"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Categoria</Label>
-              <Select
-                value={formData.category || undefined}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
+          {/* Step 2: Classificação */}
+          {step === 2 && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <Select
+                    value={formData.category || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Dificuldade</Label>
+                  <Select
+                    value={formData.difficulty || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIFFICULTIES.map((diff) => (
+                        <SelectItem key={diff.value} value={diff.value}>
+                          {diff.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Academia</Label>
+                <Select
+                  value={formData.gym_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vincular a uma academia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {gyms?.map((gym) => (
+                      <SelectItem key={gym.id} value={gym.id}>
+                        {gym.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Músculos Trabalhados</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
+                  {MUSCLES.map((muscle) => (
+                    <div key={muscle.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`muscle-${muscle.value}`}
+                        checked={formData.muscles.includes(muscle.value)}
+                        onCheckedChange={() => toggleMuscle(muscle.value)}
+                      />
+                      <Label
+                        htmlFor={`muscle-${muscle.value}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {muscle.label}
+                      </Label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </div>
+            </>
+          )}
 
+          {/* Step 3: Especificações */}
+          {step === 3 && (
             <div className="space-y-2">
-              <Label>Dificuldade</Label>
-              <Select
-                value={formData.difficulty || undefined}
-                onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DIFFICULTIES.map((diff) => (
-                    <SelectItem key={diff.value} value={diff.value}>
-                      {diff.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Academia</Label>
-            <Select
-              value={formData.gym_id || "none"}
-              onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Vincular a uma academia" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {gyms?.map((gym) => (
-                  <SelectItem key={gym.id} value={gym.id}>
-                    {gym.name}
-                  </SelectItem>
+              <Label>Especificações Técnicas</Label>
+              <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                {formData.specifications.map((spec, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={spec}
+                      onChange={(e) => {
+                        const updated = [...formData.specifications];
+                        updated[index] = e.target.value;
+                        setFormData({ ...formData, specifications: updated });
+                      }}
+                      placeholder="Ex: Carga máxima: 150kg"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 h-8 w-8"
+                      onClick={() => {
+                        const updated = formData.specifications.filter((_, i) => i !== index);
+                        setFormData({ ...formData, specifications: updated });
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Especificações Técnicas</Label>
-            <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
-              {formData.specifications.map((spec, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={spec}
-                    onChange={(e) => {
-                      const updated = [...formData.specifications];
-                      updated[index] = e.target.value;
-                      setFormData({ ...formData, specifications: updated });
-                    }}
-                    placeholder="Ex: Carga máxima: 150kg"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 h-8 w-8"
-                    onClick={() => {
-                      const updated = formData.specifications.filter((_, i) => i !== index);
-                      setFormData({ ...formData, specifications: updated });
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setFormData({ ...formData, specifications: [...formData.specifications, ""] })
-                }
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Adicionar especificação
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setFormData({ ...formData, specifications: [...formData.specifications, ""] })
+                  }
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Adicionar especificação
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          <div className="flex gap-2 pt-4">
+        {/* Navigation buttons */}
+        <div className="flex gap-2 pt-2">
+          {step === 1 ? (
             <Button
               type="button"
               variant="outline"
@@ -337,7 +375,35 @@ const EquipmentForm = ({
             >
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1" disabled={isLoading}>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setStep(step - 1)}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Voltar
+            </Button>
+          )}
+
+          {step < 3 ? (
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={step === 1 && !formData.name.trim()}
+              onClick={() => setStep(step + 1)}
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={isLoading}
+              onClick={handleSubmit}
+            >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : equipment ? (
@@ -346,8 +412,8 @@ const EquipmentForm = ({
                 "Criar"
               )}
             </Button>
-          </div>
-        </form>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
