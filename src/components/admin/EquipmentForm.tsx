@@ -48,6 +48,7 @@ interface Equipment {
   muscles?: string[] | null;
   image_url?: string | null;
   specifications?: string[] | null;
+  usage_instructions?: string | null;
 }
 
 interface EquipmentFormProps {
@@ -98,6 +99,7 @@ const EquipmentForm = ({
     image_url: "",
     muscles: [] as string[],
     specifications: [] as string[],
+    usage_instructions: "",
   });
 
   useEffect(() => {
@@ -112,6 +114,7 @@ const EquipmentForm = ({
         image_url: equipment.image_url || "",
         muscles: equipment.muscles || [],
         specifications: equipment.specifications || [],
+        usage_instructions: equipment.usage_instructions || "",
       });
     } else {
       setFormData({
@@ -124,6 +127,7 @@ const EquipmentForm = ({
         image_url: "",
         muscles: [],
         specifications: [],
+        usage_instructions: "",
       });
     }
     setStep(1);
@@ -191,6 +195,7 @@ const EquipmentForm = ({
         image_url: imageUrl,
         muscles: formData.muscles.length > 0 ? formData.muscles : null,
         specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
+        usage_instructions: formData.usage_instructions || null,
         ...(equipment?.id && { id: equipment.id }),
       };
       onSubmit(data);
@@ -269,6 +274,16 @@ const EquipmentForm = ({
                 <ImageUpload
                   onImageSelect={setImageFile}
                   selectedImage={imageFile}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="usage_instructions">Modo de Uso</Label>
+                <Textarea
+                  id="usage_instructions"
+                  value={formData.usage_instructions}
+                  onChange={(e) => setFormData({ ...formData, usage_instructions: e.target.value })}
+                  placeholder="Explique como usar o equipamento passo a passo..."
+                  rows={3}
                 />
               </div>
               <div className="space-y-2">

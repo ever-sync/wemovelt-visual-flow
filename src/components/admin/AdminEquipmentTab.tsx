@@ -29,6 +29,7 @@ interface Equipment {
   muscles?: string[] | null;
   image_url?: string | null;
   specifications?: string[] | null;
+  usage_instructions?: string | null;
 }
 
 const AdminEquipmentTab = () => {

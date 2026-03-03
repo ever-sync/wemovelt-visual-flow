@@ -1,0 +1,1 @@
+ALTER TABLE public.equipment ADD COLUMN usage_instructions text;

@@ -13,6 +13,7 @@ interface EquipmentData {
   image_url?: string | null;
   qr_code?: string | null;
   specifications?: string[] | null;
+  usage_instructions?: string | null;
 }
 
 interface UpdateEquipmentData extends EquipmentData {
