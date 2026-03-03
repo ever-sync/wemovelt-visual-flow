@@ -73,6 +73,7 @@ export type Database = {
           image_url: string | null
           muscles: string[] | null
           name: string
+          primary_function: string | null
           qr_code: string | null
           specifications: string[] | null
           usage_instructions: string | null
@@ -88,6 +89,7 @@ export type Database = {
           image_url?: string | null
           muscles?: string[] | null
           name: string
+          primary_function?: string | null
           qr_code?: string | null
           specifications?: string[] | null
           usage_instructions?: string | null
@@ -103,6 +105,7 @@ export type Database = {
           image_url?: string | null
           muscles?: string[] | null
           name?: string
+          primary_function?: string | null
           qr_code?: string | null
           specifications?: string[] | null
           usage_instructions?: string | null

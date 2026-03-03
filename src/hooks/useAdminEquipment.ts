@@ -14,6 +14,7 @@ interface EquipmentData {
   qr_code?: string | null;
   specifications?: string[] | null;
   usage_instructions?: string | null;
+  primary_function?: string | null;
 }
 
 interface UpdateEquipmentData extends EquipmentData {

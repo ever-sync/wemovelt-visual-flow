@@ -1,0 +1,1 @@
+ALTER TABLE public.equipment ADD COLUMN primary_function text;

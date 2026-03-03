@@ -49,6 +49,7 @@ interface Equipment {
   image_url?: string | null;
   specifications?: string[] | null;
   usage_instructions?: string | null;
+  primary_function?: string | null;
 }
 
 interface EquipmentFormProps {
@@ -100,6 +101,7 @@ const EquipmentForm = ({
     muscles: [] as string[],
     specifications: [] as string[],
     usage_instructions: "",
+    primary_function: "",
   });
 
   useEffect(() => {
@@ -115,6 +117,7 @@ const EquipmentForm = ({
         muscles: equipment.muscles || [],
         specifications: equipment.specifications || [],
         usage_instructions: equipment.usage_instructions || "",
+        primary_function: equipment.primary_function || "",
       });
     } else {
       setFormData({
@@ -128,6 +131,7 @@ const EquipmentForm = ({
         muscles: [],
         specifications: [],
         usage_instructions: "",
+        primary_function: "",
       });
     }
     setStep(1);
@@ -196,6 +200,7 @@ const EquipmentForm = ({
         muscles: formData.muscles.length > 0 ? formData.muscles : null,
         specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
         usage_instructions: formData.usage_instructions || null,
+        primary_function: formData.primary_function || null,
         ...(equipment?.id && { id: equipment.id }),
       };
       onSubmit(data);
@@ -262,8 +267,17 @@ const EquipmentForm = ({
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descreva o equipamento e como usar..."
+                  placeholder="Descreva o equipamento..."
                   rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="primary_function">Função Principal</Label>
+                <Input
+                  id="primary_function"
+                  value={formData.primary_function}
+                  onChange={(e) => setFormData({ ...formData, primary_function: e.target.value })}
+                  placeholder="Ex: Fortalecimento de peitoral e tríceps"
                 />
               </div>
               <div className="space-y-2">

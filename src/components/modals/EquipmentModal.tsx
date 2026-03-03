@@ -69,6 +69,11 @@ const EquipmentModal = ({ equipment, open, onOpenChange }: EquipmentModalProps) 
                 <p className="text-muted-foreground text-left">
                   Músculos: <span className="text-primary">{equipment.muscles?.join(", ") || "Não especificado"}</span>
                 </p>
+                {equipment.primary_function && (
+                  <p className="text-sm text-muted-foreground text-left">
+                    Função: <span className="text-primary">{equipment.primary_function}</span>
+                  </p>
+                )}
                 {equipment.difficulty && (
                   <p className="text-sm text-muted-foreground text-left">
                     Dificuldade: <span className="capitalize">{equipment.difficulty}</span>

@@ -30,6 +30,7 @@ interface Equipment {
   image_url?: string | null;
   specifications?: string[] | null;
   usage_instructions?: string | null;
+  primary_function?: string | null;
 }
 
 const AdminEquipmentTab = () => {
