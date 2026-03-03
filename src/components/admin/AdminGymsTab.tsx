@@ -30,7 +30,7 @@ interface Gym {
 }
 
 const AdminGymsTab = () => {
-  const { gyms, isLoading } = useGyms();
+  const { gyms, isLoading, error } = useGyms();
   const { createGym, updateGym, deleteGym } = useAdminGyms();
   
   const [formOpen, setFormOpen] = useState(false);
@@ -73,6 +73,15 @@ const AdminGymsTab = () => {
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-24 w-full" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-destructive text-sm">Não foi possível carregar academias.</p>
+        <p className="text-muted-foreground text-xs mt-1">Tente recarregar a página.</p>
       </div>
     );
   }

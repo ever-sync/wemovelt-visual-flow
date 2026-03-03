@@ -75,7 +75,7 @@ const EquipmentForm = ({
   onSubmit,
   isLoading,
 }: EquipmentFormProps) => {
-  const { gyms } = useGyms();
+  const { gyms, isLoading: gymsLoading, error: gymsError } = useGyms();
   const [step, setStep] = useState(1);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -331,22 +331,27 @@ const EquipmentForm = ({
               </div>
               <div className="space-y-2">
                 <Label>Academia</Label>
-                <Select
-                  value={formData.gym_id || "none"}
-                  onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vincular a uma academia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
-                    {gyms?.map((gym) => (
-                      <SelectItem key={gym.id} value={gym.id}>
-                        {gym.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {gymsError ? (
+                  <p className="text-sm text-destructive">Erro ao carregar academias. Tente reabrir o formulário.</p>
+                ) : (
+                  <Select
+                    value={formData.gym_id || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, gym_id: value === "none" ? "" : value })}
+                    disabled={gymsLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={gymsLoading ? "Carregando academias..." : "Vincular a uma academia"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhuma</SelectItem>
+                      {gyms?.map((gym) => (
+                        <SelectItem key={gym.id} value={gym.id}>
+                          {gym.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Músculos Trabalhados</Label>

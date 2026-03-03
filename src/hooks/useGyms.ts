@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateDistance, type GeoPosition } from "@/utils/geoValidation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Gym {
   id: string;
@@ -20,8 +21,10 @@ export interface NearestGymResult {
 }
 
 export const useGyms = () => {
+  const { user } = useAuth();
+
   const { data: gyms = [], isLoading, error } = useQuery({
-    queryKey: ["gyms"],
+    queryKey: ["gyms", user?.id ?? "anon"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("gyms")
@@ -31,7 +34,9 @@ export const useGyms = () => {
       if (error) throw error;
       return data as Gym[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+    retry: 3,
   });
 
   const getGymById = (id: string): Gym | undefined => {
@@ -46,9 +51,7 @@ export const useGyms = () => {
 
     for (const gym of gyms) {
       if (gym.lat === null || gym.lng === null) continue;
-
       const distance = calculateDistance(position, { lat: gym.lat, lng: gym.lng });
-
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestGym = gym;
