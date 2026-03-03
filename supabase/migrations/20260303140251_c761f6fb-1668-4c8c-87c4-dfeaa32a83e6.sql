@@ -1,0 +1,1 @@
+ALTER TABLE public.equipment ADD COLUMN specifications text[] DEFAULT NULL;

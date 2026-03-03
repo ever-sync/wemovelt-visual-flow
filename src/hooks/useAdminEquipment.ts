@@ -12,6 +12,7 @@ interface EquipmentData {
   muscles?: string[] | null;
   image_url?: string | null;
   qr_code?: string | null;
+  specifications?: string[] | null;
 }
 
 interface UpdateEquipmentData extends EquipmentData {

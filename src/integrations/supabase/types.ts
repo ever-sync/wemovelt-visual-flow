@@ -74,6 +74,7 @@ export type Database = {
           muscles: string[] | null
           name: string
           qr_code: string | null
+          specifications: string[] | null
           video_url: string | null
         }
         Insert: {
@@ -87,6 +88,7 @@ export type Database = {
           muscles?: string[] | null
           name: string
           qr_code?: string | null
+          specifications?: string[] | null
           video_url?: string | null
         }
         Update: {
@@ -100,6 +102,7 @@ export type Database = {
           muscles?: string[] | null
           name?: string
           qr_code?: string | null
+          specifications?: string[] | null
           video_url?: string | null
         }
         Relationships: [

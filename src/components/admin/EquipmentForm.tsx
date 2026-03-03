@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGyms } from "@/hooks/useGyms";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 
 const MUSCLES = [
   { value: "Peitoral", label: "Peitoral" },
@@ -45,6 +45,7 @@ interface Equipment {
   gym_id?: string | null;
   muscles?: string[] | null;
   image_url?: string | null;
+  specifications?: string[] | null;
 }
 
 interface EquipmentFormProps {
@@ -89,6 +90,7 @@ const EquipmentForm = ({
     gym_id: "",
     image_url: "",
     muscles: [] as string[],
+    specifications: [] as string[],
   });
 
   useEffect(() => {
@@ -102,6 +104,7 @@ const EquipmentForm = ({
         gym_id: equipment.gym_id || "",
         image_url: equipment.image_url || "",
         muscles: equipment.muscles || [],
+        specifications: equipment.specifications || [],
       });
     } else {
       setFormData({
@@ -113,6 +116,7 @@ const EquipmentForm = ({
         gym_id: "",
         image_url: "",
         muscles: [],
+        specifications: [],
       });
     }
   }, [equipment, open]);
@@ -129,6 +133,7 @@ const EquipmentForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const filteredSpecs = formData.specifications.filter((s) => s.trim() !== "");
     const data = {
       ...formData,
       description: formData.description || null,
@@ -138,6 +143,7 @@ const EquipmentForm = ({
       gym_id: formData.gym_id || null,
       image_url: formData.image_url || null,
       muscles: formData.muscles.length > 0 ? formData.muscles : null,
+      specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
       ...(equipment?.id && { id: equipment.id }),
     };
     
@@ -223,7 +229,7 @@ const EquipmentForm = ({
             <div className="space-y-2">
               <Label>Categoria</Label>
               <Select
-                value={formData.category}
+                value={formData.category || undefined}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
               >
                 <SelectTrigger>
@@ -242,7 +248,7 @@ const EquipmentForm = ({
             <div className="space-y-2">
               <Label>Dificuldade</Label>
               <Select
-                value={formData.difficulty}
+                value={formData.difficulty || undefined}
                 onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
               >
                 <SelectTrigger>
@@ -277,6 +283,49 @@ const EquipmentForm = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Especificações Técnicas</Label>
+            <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+              {formData.specifications.map((spec, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={spec}
+                    onChange={(e) => {
+                      const updated = [...formData.specifications];
+                      updated[index] = e.target.value;
+                      setFormData({ ...formData, specifications: updated });
+                    }}
+                    placeholder="Ex: Carga máxima: 150kg"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 h-8 w-8"
+                    onClick={() => {
+                      const updated = formData.specifications.filter((_, i) => i !== index);
+                      setFormData({ ...formData, specifications: updated });
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setFormData({ ...formData, specifications: [...formData.specifications, ""] })
+                }
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar especificação
+              </Button>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">
