@@ -2,29 +2,37 @@
 
 ## Problem
 
-The admin panel cannot delete gyms or equipment due to foreign key constraints:
-1. **Gyms**: `check_ins.gym_id` references `gyms.id` — blocks gym deletion
-2. **Equipment**: `workout_exercises.equipment_id` references `equipment.id` — blocks equipment deletion
-
-Both `gym_id` and `equipment_id` are nullable columns, so the correct fix is to change the foreign keys to `ON DELETE SET NULL`. This preserves the check-in and exercise records but clears the reference to the deleted gym/equipment.
+1. **Category, Difficulty, and Academy selects** may not be saving correctly because the Radix Select component doesn't handle empty string `""` as a valid uncontrolled state — it needs `undefined` to show the placeholder.
+2. **Missing field**: Need to add a "Especificações Técnicas" (Technical Specifications) list field to equipment, like the reference image shows (bullet-point list of specs).
 
 ## Plan
 
-**Single database migration** to drop and recreate both foreign keys with `ON DELETE SET NULL`:
-
+### 1. Database migration
+Add a `specifications` column (text array) to the `equipment` table:
 ```sql
--- Fix check_ins -> gyms FK
-ALTER TABLE public.check_ins
-  DROP CONSTRAINT check_ins_gym_id_fkey,
-  ADD CONSTRAINT check_ins_gym_id_fkey
-    FOREIGN KEY (gym_id) REFERENCES public.gyms(id) ON DELETE SET NULL;
-
--- Fix workout_exercises -> equipment FK
-ALTER TABLE public.workout_exercises
-  DROP CONSTRAINT workout_exercises_equipment_id_fkey,
-  ADD CONSTRAINT workout_exercises_equipment_id_fkey
-    FOREIGN KEY (equipment_id) REFERENCES public.equipment(id) ON DELETE SET NULL;
+ALTER TABLE public.equipment ADD COLUMN specifications text[] DEFAULT NULL;
 ```
 
-No code changes needed — the admin hooks already handle delete correctly. After this migration, deleting a gym or equipment will succeed and simply null out the references in related records.
+### 2. Fix EquipmentForm select handling
+In `src/components/admin/EquipmentForm.tsx`:
+- Change Select `value` props to use `undefined` instead of `""` when no value is selected, so the placeholder renders correctly
+- For category: `value={formData.category || undefined}`
+- For difficulty: `value={formData.difficulty || undefined}`
+- For gym: keep current logic (already uses `"none"` sentinel)
+
+### 3. Add Specifications list field
+In `src/components/admin/EquipmentForm.tsx`:
+- Add a dynamic list input below the gym select where the admin can add/remove specification lines (free text)
+- Each line has an input + remove button; a "+ Adicionar" button appends a new empty line
+- Stored as `string[]` in `formData.specifications`
+
+### 4. Update types and hooks
+- Update `Equipment` interfaces in `AdminEquipmentTab.tsx`, `EquipmentForm.tsx`, and `useAdminEquipment.ts` to include `specifications?: string[] | null`
+- The types.ts file will auto-update after migration
+
+### Files changed
+- `src/components/admin/EquipmentForm.tsx` — fix selects, add specifications field
+- `src/components/admin/AdminEquipmentTab.tsx` — update Equipment interface
+- `src/hooks/useAdminEquipment.ts` — update EquipmentData interface
+- New migration for `specifications` column
 
