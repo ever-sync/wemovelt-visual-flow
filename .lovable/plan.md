@@ -1,36 +1,30 @@
 
 
-# Criar Pagina Publica de Politica de Privacidade
+## Problem
 
-## Objetivo
-Criar uma rota publica `/privacidade` acessivel sem login, para ser usada como URL da politica de privacidade na Google Play Store e outros servicos externos.
+The admin panel cannot delete gyms or equipment due to foreign key constraints:
+1. **Gyms**: `check_ins.gym_id` references `gyms.id` — blocks gym deletion
+2. **Equipment**: `workout_exercises.equipment_id` references `equipment.id` — blocks equipment deletion
 
-## O que sera feito
+Both `gym_id` and `equipment_id` are nullable columns, so the correct fix is to change the foreign keys to `ON DELETE SET NULL`. This preserves the check-in and exercise records but clears the reference to the deleted gym/equipment.
 
-### 1. Criar pagina `src/pages/Privacidade.tsx`
-- Pagina publica (sem ProtectedRoute) com o mesmo conteudo do `PrivacyModal.tsx` existente
-- Layout responsivo, fundo escuro consistente com o tema do app
-- Logo WEMOVELT no topo
-- Botao para voltar ao app
+## Plan
 
-### 2. Criar pagina `src/pages/Termos.tsx`
-- Mesma abordagem para os Termos de Uso (aproveitando o conteudo do `TermsModal.tsx`)
-- Util tambem para a Play Store
+**Single database migration** to drop and recreate both foreign keys with `ON DELETE SET NULL`:
 
-### 3. Adicionar rotas no `App.tsx`
-- `/privacidade` - rota publica (sem ProtectedRoute)
-- `/termos` - rota publica (sem ProtectedRoute)
+```sql
+-- Fix check_ins -> gyms FK
+ALTER TABLE public.check_ins
+  DROP CONSTRAINT check_ins_gym_id_fkey,
+  ADD CONSTRAINT check_ins_gym_id_fkey
+    FOREIGN KEY (gym_id) REFERENCES public.gyms(id) ON DELETE SET NULL;
 
-## URL final
-Apos publicacao, a politica de privacidade estara acessivel em:
-- `https://wemovelt-visual-flow.lovable.app/privacidade`
-- `https://wemovelt-visual-flow.lovable.app/termos`
+-- Fix workout_exercises -> equipment FK
+ALTER TABLE public.workout_exercises
+  DROP CONSTRAINT workout_exercises_equipment_id_fkey,
+  ADD CONSTRAINT workout_exercises_equipment_id_fkey
+    FOREIGN KEY (equipment_id) REFERENCES public.equipment(id) ON DELETE SET NULL;
+```
 
-Essas URLs podem ser usadas diretamente na Google Play Store.
-
-## Detalhes tecnicos
-- Reutiliza o conteudo ja escrito nos modais existentes
-- Nao requer autenticacao
-- Nao requer alteracoes no banco de dados
-- Paginas estaticas, sem dependencias externas
+No code changes needed — the admin hooks already handle delete correctly. After this migration, deleting a gym or equipment will succeed and simply null out the references in related records.
 
