@@ -60,17 +60,6 @@ interface EquipmentFormProps {
   isLoading?: boolean;
 }
 
-const CATEGORIES = [
-  { value: "peito", label: "Peito" },
-  { value: "costas", label: "Costas" },
-  { value: "pernas", label: "Pernas" },
-  { value: "bracos", label: "Braços" },
-  { value: "ombros", label: "Ombros" },
-  { value: "abdomen", label: "Abdômen" },
-  { value: "cardio", label: "Cardio" },
-  { value: "funcional", label: "Funcional" },
-];
-
 const DIFFICULTIES = [
   { value: "beginner", label: "Iniciante" },
   { value: "intermediate", label: "Intermediário" },
@@ -322,43 +311,23 @@ const EquipmentForm = ({
           {/* Step 3: Classificação */}
           {step === 3 && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Select
-                    value={formData.category || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Dificuldade</Label>
-                  <Select
-                    value={formData.difficulty || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DIFFICULTIES.map((diff) => (
-                        <SelectItem key={diff.value} value={diff.value}>
-                          {diff.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Dificuldade</Label>
+                <Select
+                  value={formData.difficulty || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTIES.map((diff) => (
+                      <SelectItem key={diff.value} value={diff.value}>
+                        {diff.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Academia</Label>
