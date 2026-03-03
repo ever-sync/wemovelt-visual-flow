@@ -18,6 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGyms } from "@/hooks/useGyms";
+import { supabase } from "@/integrations/supabase/client";
+import ImageUpload from "@/components/ImageUpload";
 import { Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const MUSCLES = [
@@ -84,6 +86,8 @@ const EquipmentForm = ({
 }: EquipmentFormProps) => {
   const { gyms } = useGyms();
   const [step, setStep] = useState(1);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -123,6 +127,7 @@ const EquipmentForm = ({
       });
     }
     setStep(1);
+    setImageFile(null);
   }, [equipment, open]);
 
   const toggleMuscle = (muscle: string) => {
@@ -134,21 +139,66 @@ const EquipmentForm = ({
     }));
   };
 
-  const handleSubmit = () => {
-    const filteredSpecs = formData.specifications.filter((s) => s.trim() !== "");
-    const data = {
-      ...formData,
-      description: formData.description || null,
-      video_url: formData.video_url || null,
-      category: formData.category || null,
-      difficulty: formData.difficulty || null,
-      gym_id: formData.gym_id || null,
-      image_url: formData.image_url || null,
-      muscles: formData.muscles.length > 0 ? formData.muscles : null,
-      specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
-      ...(equipment?.id && { id: equipment.id }),
-    };
-    onSubmit(data);
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return formData.image_url || null;
+    
+    const fileExt = imageFile.name.split('.').pop();
+    const filePath = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    
+    const { error } = await supabase.storage
+      .from('equipment-images')
+      .upload(filePath, imageFile);
+    
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage
+      .from('equipment-images')
+      .getPublicUrl(filePath);
+    
+    return urlData.publicUrl;
+  };
+
+  const deleteOldImage = async (url: string) => {
+    try {
+      const path = url.split('/equipment-images/')[1];
+      if (path) {
+        await supabase.storage.from('equipment-images').remove([path]);
+      }
+    } catch {}
+  };
+
+  const handleSubmit = async () => {
+    setIsUploading(true);
+    try {
+      const filteredSpecs = formData.specifications.filter((s) => s.trim() !== "");
+      
+      let imageUrl = formData.image_url || null;
+      if (imageFile) {
+        // Delete old image if editing
+        if (equipment?.image_url && equipment.image_url.includes('equipment-images')) {
+          await deleteOldImage(equipment.image_url);
+        }
+        imageUrl = await uploadImage();
+      }
+      
+      const data = {
+        ...formData,
+        description: formData.description || null,
+        video_url: formData.video_url || null,
+        category: formData.category || null,
+        difficulty: formData.difficulty || null,
+        gym_id: formData.gym_id || null,
+        image_url: imageUrl,
+        muscles: formData.muscles.length > 0 ? formData.muscles : null,
+        specifications: filteredSpecs.length > 0 ? filteredSpecs : null,
+        ...(equipment?.id && { id: equipment.id }),
+      };
+      onSubmit(data);
+    } catch (error: any) {
+      alert('Erro ao fazer upload da imagem: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -212,13 +262,13 @@ const EquipmentForm = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image_url">URL da Imagem</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
+                <Label>Imagem do Equipamento</Label>
+                {equipment?.image_url && !imageFile && (
+                  <img src={equipment.image_url} alt="Imagem atual" className="w-full h-32 object-cover rounded-xl mb-2" />
+                )}
+                <ImageUpload
+                  onImageSelect={setImageFile}
+                  selectedImage={imageFile}
                 />
               </div>
               <div className="space-y-2">
@@ -401,10 +451,10 @@ const EquipmentForm = ({
             <Button
               type="button"
               className="flex-1"
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               onClick={handleSubmit}
             >
-              {isLoading ? (
+              {isLoading || isUploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : equipment ? (
                 "Salvar"
