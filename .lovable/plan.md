@@ -2,39 +2,24 @@
 
 ## Problema
 
-Atualmente o campo de imagem do equipamento aceita apenas uma URL digitada manualmente. O usuário quer poder **fazer upload de uma imagem** diretamente, que será armazenada no backend e a URL salva automaticamente no banco.
+Os componentes `Select` (Categoria, Dificuldade, Academia) na Etapa 3 do formulário não estão funcionando porque o `Dialog` do Radix UI com `modal={true}` (padrão) captura todos os eventos de ponteiro, impedindo que os dropdowns do `Select` (que usam Portal) abram corretamente.
 
 ## Solução
 
-### 1. Criar bucket de storage `equipment-images`
+Adicionar a prop `modal={false}` no componente `<Dialog>` do `EquipmentForm.tsx`. Isso permite que os portais dos `Select` recebam eventos de clique normalmente enquanto o diálogo permanece aberto.
 
-Migration SQL para criar o bucket público e políticas RLS permitindo admins fazerem upload/delete:
+### Arquivo alterado
+- `src/components/admin/EquipmentForm.tsx` — adicionar `modal={false}` ao `<Dialog>`
 
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('equipment-images', 'equipment-images', true);
+### Mudança
 
-CREATE POLICY "Anyone can view equipment images"
-ON storage.objects FOR SELECT USING (bucket_id = 'equipment-images');
+```tsx
+// De:
+<Dialog open={open} onOpenChange={onOpenChange}>
 
-CREATE POLICY "Admins can upload equipment images"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'equipment-images' AND public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Admins can delete equipment images"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'equipment-images' AND public.has_role(auth.uid(), 'admin'));
+// Para:
+<Dialog open={open} onOpenChange={onOpenChange} modal={false}>
 ```
 
-### 2. Atualizar EquipmentForm (Etapa 1)
-
-Substituir o campo "URL da Imagem" (input de texto) pelo componente `ImageUpload` já existente no projeto. No submit:
-
-1. Se o usuário selecionou um arquivo, fazer upload para `equipment-images/{timestamp}-{filename}`
-2. Obter a URL pública e salvar no campo `image_url`
-3. Se está editando e já tinha imagem anterior, deletar o arquivo antigo do storage
-
-### 3. Arquivos alterados
-
-- `src/components/admin/EquipmentForm.tsx` — trocar input URL por ImageUpload, adicionar lógica de upload no submit
-- Nova migration para o bucket `equipment-images`
+Apenas uma linha alterada. Isso resolve o conflito entre os portais do Select e o overlay modal do Dialog.
 
