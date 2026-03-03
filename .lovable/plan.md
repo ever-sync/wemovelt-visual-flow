@@ -1,38 +1,38 @@
 
 
-## Problem
+## Problema
 
-1. **Category, Difficulty, and Academy selects** may not be saving correctly because the Radix Select component doesn't handle empty string `""` as a valid uncontrolled state — it needs `undefined` to show the placeholder.
-2. **Missing field**: Need to add a "Especificações Técnicas" (Technical Specifications) list field to equipment, like the reference image shows (bullet-point list of specs).
+O formulário de equipamento é muito longo para caber em um modal, causando problemas de responsividade. Os selects também podem estar com comportamento instável por conflitos com o scroll do Dialog.
 
-## Plan
+## Solução: Formulário em Etapas (Stepper)
 
-### 1. Database migration
-Add a `specifications` column (text array) to the `equipment` table:
-```sql
-ALTER TABLE public.equipment ADD COLUMN specifications text[] DEFAULT NULL;
+Dividir o `EquipmentForm` em **3 etapas** com navegação "Próximo / Voltar", mantendo tudo no mesmo Dialog mas exibindo apenas uma seção por vez. Isso resolve tanto o problema de tamanho quanto os conflitos de Select dentro de modal com scroll.
+
+### Etapas
+
+1. **Informações Básicas** — Nome, Descrição, URL da Imagem, Link do Vídeo
+2. **Classificação** — Categoria (Select), Dificuldade (Select), Academia (Select), Músculos Trabalhados (checkboxes)
+3. **Especificações** — Lista dinâmica de especificações técnicas
+
+### Implementação
+
+**Arquivo**: `src/components/admin/EquipmentForm.tsx`
+
+- Adicionar estado `step` (1, 2 ou 3)
+- Renderizar conteúdo condicional baseado no step
+- Indicador visual de progresso no topo (3 bolinhas/badges com labels)
+- Botões "Voltar" e "Próximo" em cada etapa; "Criar/Salvar" apenas na etapa final
+- Reset do step para 1 quando o modal abre/fecha
+- Remover `overflow-y-auto` do DialogContent (cada etapa cabe sem scroll)
+- Manter toda a lógica de formData e submit inalterada
+
+### Navegação
+
+```text
+[1. Básico] → [2. Classificação] → [3. Especificações]
+   [Cancelar] [Próximo →]    [← Voltar] [Próximo →]    [← Voltar] [Salvar]
 ```
 
-### 2. Fix EquipmentForm select handling
-In `src/components/admin/EquipmentForm.tsx`:
-- Change Select `value` props to use `undefined` instead of `""` when no value is selected, so the placeholder renders correctly
-- For category: `value={formData.category || undefined}`
-- For difficulty: `value={formData.difficulty || undefined}`
-- For gym: keep current logic (already uses `"none"` sentinel)
-
-### 3. Add Specifications list field
-In `src/components/admin/EquipmentForm.tsx`:
-- Add a dynamic list input below the gym select where the admin can add/remove specification lines (free text)
-- Each line has an input + remove button; a "+ Adicionar" button appends a new empty line
-- Stored as `string[]` in `formData.specifications`
-
-### 4. Update types and hooks
-- Update `Equipment` interfaces in `AdminEquipmentTab.tsx`, `EquipmentForm.tsx`, and `useAdminEquipment.ts` to include `specifications?: string[] | null`
-- The types.ts file will auto-update after migration
-
-### Files changed
-- `src/components/admin/EquipmentForm.tsx` — fix selects, add specifications field
-- `src/components/admin/AdminEquipmentTab.tsx` — update Equipment interface
-- `src/hooks/useAdminEquipment.ts` — update EquipmentData interface
-- New migration for `specifications` column
+### Arquivos alterados
+- `src/components/admin/EquipmentForm.tsx` — refatorar para stepper multi-etapa
 
