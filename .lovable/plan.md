@@ -2,37 +2,39 @@
 
 ## Problema
 
-O formulário de equipamento é muito longo para caber em um modal, causando problemas de responsividade. Os selects também podem estar com comportamento instável por conflitos com o scroll do Dialog.
+Atualmente o campo de imagem do equipamento aceita apenas uma URL digitada manualmente. O usuário quer poder **fazer upload de uma imagem** diretamente, que será armazenada no backend e a URL salva automaticamente no banco.
 
-## Solução: Formulário em Etapas (Stepper)
+## Solução
 
-Dividir o `EquipmentForm` em **3 etapas** com navegação "Próximo / Voltar", mantendo tudo no mesmo Dialog mas exibindo apenas uma seção por vez. Isso resolve tanto o problema de tamanho quanto os conflitos de Select dentro de modal com scroll.
+### 1. Criar bucket de storage `equipment-images`
 
-### Etapas
+Migration SQL para criar o bucket público e políticas RLS permitindo admins fazerem upload/delete:
 
-1. **Informações Básicas** — Nome, Descrição, URL da Imagem, Link do Vídeo
-2. **Classificação** — Categoria (Select), Dificuldade (Select), Academia (Select), Músculos Trabalhados (checkboxes)
-3. **Especificações** — Lista dinâmica de especificações técnicas
+```sql
+INSERT INTO storage.buckets (id, name, public) VALUES ('equipment-images', 'equipment-images', true);
 
-### Implementação
+CREATE POLICY "Anyone can view equipment images"
+ON storage.objects FOR SELECT USING (bucket_id = 'equipment-images');
 
-**Arquivo**: `src/components/admin/EquipmentForm.tsx`
+CREATE POLICY "Admins can upload equipment images"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'equipment-images' AND public.has_role(auth.uid(), 'admin'));
 
-- Adicionar estado `step` (1, 2 ou 3)
-- Renderizar conteúdo condicional baseado no step
-- Indicador visual de progresso no topo (3 bolinhas/badges com labels)
-- Botões "Voltar" e "Próximo" em cada etapa; "Criar/Salvar" apenas na etapa final
-- Reset do step para 1 quando o modal abre/fecha
-- Remover `overflow-y-auto` do DialogContent (cada etapa cabe sem scroll)
-- Manter toda a lógica de formData e submit inalterada
-
-### Navegação
-
-```text
-[1. Básico] → [2. Classificação] → [3. Especificações]
-   [Cancelar] [Próximo →]    [← Voltar] [Próximo →]    [← Voltar] [Salvar]
+CREATE POLICY "Admins can delete equipment images"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'equipment-images' AND public.has_role(auth.uid(), 'admin'));
 ```
 
-### Arquivos alterados
-- `src/components/admin/EquipmentForm.tsx` — refatorar para stepper multi-etapa
+### 2. Atualizar EquipmentForm (Etapa 1)
+
+Substituir o campo "URL da Imagem" (input de texto) pelo componente `ImageUpload` já existente no projeto. No submit:
+
+1. Se o usuário selecionou um arquivo, fazer upload para `equipment-images/{timestamp}-{filename}`
+2. Obter a URL pública e salvar no campo `image_url`
+3. Se está editando e já tinha imagem anterior, deletar o arquivo antigo do storage
+
+### 3. Arquivos alterados
+
+- `src/components/admin/EquipmentForm.tsx` — trocar input URL por ImageUpload, adicionar lógica de upload no submit
+- Nova migration para o bucket `equipment-images`
 
