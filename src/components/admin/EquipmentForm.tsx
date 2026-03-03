@@ -77,7 +77,7 @@ const DIFFICULTIES = [
   { value: "advanced", label: "Avançado" },
 ];
 
-const STEP_LABELS = ["Básico", "Classificação", "Especificações"];
+const STEP_LABELS = ["Básico", "Detalhes", "Classificação", "Especificações"];
 
 const EquipmentForm = ({
   open,
@@ -262,6 +262,32 @@ const EquipmentForm = ({
                 />
               </div>
               <div className="space-y-2">
+                <Label>Imagem do Equipamento</Label>
+                {equipment?.image_url && !imageFile && (
+                  <img src={equipment.image_url} alt="Imagem atual" className="w-full h-32 object-cover rounded-xl mb-2" />
+                )}
+                <ImageUpload
+                  onImageSelect={setImageFile}
+                  selectedImage={imageFile}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="video_url">Link do Vídeo (YouTube)</Label>
+                <Input
+                  id="video_url"
+                  type="url"
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+            </>
+          )}
+
+          {/* Step 2: Detalhes */}
+          {step === 2 && (
+            <>
+              <div className="space-y-2">
                 <Label htmlFor="description">Descrição</Label>
                 <Textarea
                   id="description"
@@ -281,40 +307,20 @@ const EquipmentForm = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Imagem do Equipamento</Label>
-                {equipment?.image_url && !imageFile && (
-                  <img src={equipment.image_url} alt="Imagem atual" className="w-full h-32 object-cover rounded-xl mb-2" />
-                )}
-                <ImageUpload
-                  onImageSelect={setImageFile}
-                  selectedImage={imageFile}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="usage_instructions">Modo de Uso</Label>
                 <Textarea
                   id="usage_instructions"
                   value={formData.usage_instructions}
                   onChange={(e) => setFormData({ ...formData, usage_instructions: e.target.value })}
                   placeholder="Explique como usar o equipamento passo a passo..."
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="video_url">Link do Vídeo (YouTube)</Label>
-                <Input
-                  id="video_url"
-                  type="url"
-                  value={formData.video_url}
-                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                  placeholder="https://youtube.com/watch?v=..."
+                  rows={4}
                 />
               </div>
             </>
           )}
 
-          {/* Step 2: Classificação */}
-          {step === 2 && (
+          {/* Step 3: Classificação */}
+          {step === 3 && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -396,8 +402,8 @@ const EquipmentForm = ({
             </>
           )}
 
-          {/* Step 3: Especificações */}
-          {step === 3 && (
+          {/* Step 4: Especificações */}
+          {step === 4 && (
             <div className="space-y-2">
               <Label>Especificações Técnicas</Label>
               <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
@@ -466,7 +472,7 @@ const EquipmentForm = ({
             </Button>
           )}
 
-          {step < 3 ? (
+          {step < 4 ? (
             <Button
               type="button"
               className="flex-1"
