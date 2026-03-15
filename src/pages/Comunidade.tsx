@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePosts, Post } from "@/hooks/usePosts";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { isNativeApp, shareContent } from "@/lib/native";
 
 const PostModal = lazy(() => import("@/components/modals/PostModal"));
 const CommentsModal = lazy(() => import("@/components/modals/CommentsModal"));
@@ -68,21 +69,27 @@ const Comunidade = () => {
   };
 
   const handleShare = (post: Post) => {
-    if (navigator.share) {
-      navigator.share({
+    void shareContent({
         title: "Post da Comunidade WEMOVELT",
         text: post.content.substring(0, 100),
-        url: window.location.href,
+        url: isNativeApp() ? undefined : window.location.href,
+      })
+      .then((result) => {
+        if (result === "copied") {
+          toast({
+            title: "Link copiado",
+            description: "O link foi copiado para a area de transferencia.",
+            duration: 2000,
+          });
+        }
+      })
+      .catch(() => {
+        toast({
+          title: "Nao foi possivel compartilhar",
+          description: "Tente novamente em alguns instantes.",
+          duration: 2000,
+        });
       });
-      return;
-    }
-
-    navigator.clipboard.writeText(window.location.href);
-    toast({
-      title: "Link copiado",
-      description: "O link foi copiado para a area de transferencia.",
-      duration: 2000,
-    });
   };
 
   const handleDelete = async (postId: string) => {

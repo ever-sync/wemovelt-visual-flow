@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git add -A)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git config user.email \"contato@eversync.com.br\")",
+      "Bash(git config user.name \"Rapnhael\")"
     ]
   }
 }

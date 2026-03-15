@@ -8,8 +8,11 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AuthDeepLinkBridge from "./components/AuthDeepLinkBridge";
 
 const Welcome = lazy(() => import("./pages/Welcome"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Home = lazy(() => import("./pages/Home"));
 const Treinos = lazy(() => import("./pages/Treinos"));
 const Habitos = lazy(() => import("./pages/Habitos"));
@@ -33,6 +36,8 @@ const AppContent = () => {
     <Suspense fallback={<RouteLoader />}>
       <Routes>
         <Route path="/" element={<Welcome />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/termos" element={<Termos />} />
         <Route
@@ -112,6 +117,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <AuthDeepLinkBridge />
               <AppContent />
             </AuthProvider>
           </BrowserRouter>
