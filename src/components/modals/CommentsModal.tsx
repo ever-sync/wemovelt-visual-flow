@@ -148,7 +148,7 @@ const CommentsModal = ({ open, onOpenChange, post }: CommentsModalProps) => {
                   placeholder="Escreva um comentario..."
                   value={newComment}
                   onChange={(event) => setNewComment(event.target.value)}
-                  className="min-h-[64px] flex-1 resize-none rounded-[1.2rem] border-white/10 bg-white/[0.03] px-4 py-3 text-sm"
+                  className="min-h-[64px] flex-1 resize-none rounded-[1.2rem] border-white/10 bg-white/[0.03] px-4 py-3 text-base md:text-sm"
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();

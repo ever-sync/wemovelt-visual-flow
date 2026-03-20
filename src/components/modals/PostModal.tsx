@@ -100,7 +100,7 @@ const PostModal = ({ open, onOpenChange }: PostModalProps) => {
             placeholder="O que voce quer compartilhar hoje?"
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            className="min-h-[132px] rounded-[1.35rem] border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6"
+            className="min-h-[132px] rounded-[1.35rem] border-white/10 bg-white/[0.03] px-4 py-3 text-base leading-6 md:text-sm"
           />
 
           {showImageUpload && (

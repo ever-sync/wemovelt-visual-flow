@@ -17,7 +17,7 @@ const ResetPassword = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const inputClassName =
-    "h-12 rounded-[1rem] border-white/8 bg-black/50 px-4 text-sm text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0";
+    "h-12 rounded-[1rem] border-white/8 bg-black/50 px-4 text-base text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 md:text-sm";
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
