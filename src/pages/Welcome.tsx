@@ -1,10 +1,12 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Download, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { prefetchAuthFlow, prefetchPrimaryRoutes } from "@/lib/prefetch";
 import BrandLockup from "@/components/brand/BrandLockup";
+import InstallAppDialog from "@/components/pwa/InstallAppDialog";
 
 const AuthModal = lazy(() => import("@/components/modals/AuthModal"));
 
@@ -13,6 +15,8 @@ const Welcome = () => {
   const { user, loading } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [installModalOpen, setInstallModalOpen] = useState(false);
+  const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
 
   useEffect(() => {
     if (!loading && user) {
@@ -28,6 +32,19 @@ const Welcome = () => {
     setAuthMode(mode);
     setAuthModalOpen(true);
     prefetchPrimaryRoutes();
+  };
+
+  const showInstallButton = (canInstall || isIOS) && !isInstalled;
+
+  const handleInstallClick = async () => {
+    if (canInstall) {
+      await promptInstall();
+      return;
+    }
+
+    if (isIOS) {
+      setInstallModalOpen(true);
+    }
   };
 
   const handleAuthSuccess = () => {
@@ -122,6 +139,18 @@ const Welcome = () => {
                   >
                     Criar conta
                   </Button>
+
+                  {showInstallButton && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleInstallClick}
+                      className="h-11 w-full border-white/12 bg-white/[0.04] text-sm text-white hover:bg-white/[0.08]"
+                    >
+                      <Download size={16} />
+                      Instalar app
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -139,6 +168,8 @@ const Welcome = () => {
           />
         )}
       </Suspense>
+
+      <InstallAppDialog open={installModalOpen} onOpenChange={setInstallModalOpen} />
     </div>
   );
 };

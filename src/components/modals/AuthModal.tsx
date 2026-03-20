@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import BrandLockup from "@/components/brand/BrandLockup";
 
 interface AuthModalProps {
   open: boolean;
@@ -75,18 +74,6 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
       setResetMode(false);
     }
   }, [mode, open]);
-
-  const title = useMemo(() => {
-    if (resetMode) return "Recupere sua senha";
-    return currentMode === "login" ? "Entre para manter seu ritmo" : "Crie sua conta e acompanhe sua evolucao";
-  }, [currentMode, resetMode]);
-
-  const subtitle = useMemo(() => {
-    if (resetMode) return "Informe seu e-mail para receber o link de redefinicao.";
-    return currentMode === "login"
-      ? "Login rapido, interface limpa e foco total no treino."
-      : "Cadastro direto para entrar no app com menos atrito.";
-  }, [currentMode, resetMode]);
 
   const resetState = () => {
     setName("");
@@ -205,25 +192,24 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
           <div className="absolute left-[-2rem] top-24 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute right-[-1rem] top-14 h-24 w-24 rounded-full bg-primary/12 blur-3xl" />
 
-          <div className="relative z-10 px-6 pb-6 pt-10">
-            <div className="mb-8">
-              <BrandLockup
-                className="mb-8"
-                iconClassName="h-12 w-12"
-                kickerClassName="text-[0.68rem]"
-                titleClassName="text-lg"
-              />
-
-              <DialogTitle className="max-w-[11ch] text-[2rem] font-bold leading-[1.02] tracking-[-0.07em]">
-                {title}
-              </DialogTitle>
-              <DialogDescription className="mt-3 max-w-[28ch] text-sm leading-6 text-muted-foreground">
-                {subtitle}
-              </DialogDescription>
-            </div>
+          <div className="relative z-10 px-6 pb-6 pt-6">
+            <DialogTitle className="sr-only">
+              {resetMode
+                ? "Recuperar senha"
+                : currentMode === "login"
+                  ? "Entrar na sua conta"
+                  : "Criar sua conta"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {resetMode
+                ? "Informe seu e-mail para receber o link de redefinicao."
+                : currentMode === "login"
+                  ? "Entre com seu e-mail e senha para continuar."
+                  : "Preencha os dados para criar sua conta."}
+            </DialogDescription>
 
             {!resetMode && (
-              <div className="mb-5 grid grid-cols-2 rounded-full border border-white/8 bg-white/[0.05] p-1">
+              <div className="mb-5 mt-2 grid grid-cols-2 rounded-full border border-white/8 bg-white/[0.05] p-1">
                 <button
                   type="button"
                   onClick={() => setMode("login")}
