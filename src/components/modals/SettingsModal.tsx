@@ -25,7 +25,7 @@ const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
     disablePushNotifications,
   } = usePushNotifications();
 
-  const openLegalPage = (path: "/termos" | "/privacidade") => {
+  const openLegalPage = (path: "/termos" | "/privacidade" | "/exclusao-conta") => {
     onOpenChange(false);
     navigate(path);
   };
@@ -164,6 +164,13 @@ const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
                 className="flex w-full items-center justify-between rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.05]"
               >
                 <span className="text-sm font-medium">Politica de privacidade</span>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => openLegalPage("/exclusao-conta")}
+                className="flex w-full items-center justify-between rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.05]"
+              >
+                <span className="text-sm font-medium">Exclusao de conta</span>
                 <ChevronRight size={16} className="text-muted-foreground" />
               </button>
             </div>

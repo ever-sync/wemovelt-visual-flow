@@ -24,6 +24,7 @@ const Comunidade = lazy(() => import("./pages/Comunidade"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
 const Termos = lazy(() => import("./pages/Termos"));
+const ExclusaoConta = lazy(() => import("./pages/ExclusaoConta"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const RouteLoader = () => (
@@ -43,6 +44,7 @@ const AppContent = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/termos" element={<Termos />} />
+        <Route path="/exclusao-conta" element={<ExclusaoConta />} />
         <Route
           path="/home"
           element={

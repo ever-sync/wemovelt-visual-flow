@@ -6,75 +6,83 @@ export interface LegalSection {
 
 export const privacySections: LegalSection[] = [
   {
-    title: "1. Coleta de Dados",
-    paragraphs: ["Coletamos os seguintes dados para operar o app com seguranca e personalizacao:"],
+    title: "1. Dados que Coletamos",
+    paragraphs: ["Coletamos apenas os dados necessarios para cadastro, operacao do app, check-ins e recursos sociais do WEMOVELT."],
     bullets: [
-      "Dados de cadastro: nome, e-mail e idade opcional.",
-      "Dados de perfil: peso, altura e objetivos opcionais.",
-      "Dados de localizacao: usados apenas para validar check-ins.",
-      "Dados de uso: treinos, habitos e atividade na comunidade.",
+      "Dados de cadastro e autenticacao: nome, e-mail e identificadores de conta.",
+      "Dados de perfil: foto/avatar, username, idade, peso, altura, objetivo e nivel de experiencia, quando informados por voce.",
+      "Dados de uso: treinos, habitos, metas, check-ins, curtidas, comentarios e historico de atividade dentro da plataforma.",
+      "Midia enviada por voce: avatar e imagens publicadas em posts.",
+      "Dados tecnicos e de notificacao: identificadores de push, tipo de dispositivo, navegador e dados tecnicos basicos quando voce ativa notificacoes.",
     ],
   },
   {
-    title: "2. Uso dos Dados",
-    bullets: [
-      "Fornecer e melhorar os servicos do WEMOVELT.",
-      "Personalizar a experiencia de treino.",
-      "Validar check-ins por geolocalizacao ou QR Code.",
-      "Exibir historicos, metas e estatisticas.",
-      "Enviar comunicacoes relacionadas ao servico.",
-    ],
-  },
-  {
-    title: "3. Localizacao",
+    title: "2. Localizacao, Camera e Notificacoes",
     paragraphs: [
-      "A localizacao e consultada apenas no momento do check-in para validar sua presenca. Nao fazemos rastreamento continuo.",
-      "Se preferir, voce pode usar check-in por QR Code quando houver identificacao valida no equipamento.",
+      "A localizacao e consultada somente quando voce escolhe validar check-in por GPS. Nao fazemos rastreamento continuo em segundo plano.",
+      "A camera e usada apenas quando voce opta por escanear QR Code para validar check-in. O app nao usa a camera fora desse fluxo.",
+      "As notificacoes push sao opcionais e dependem da sua permissao no dispositivo.",
     ],
   },
   {
-    title: "4. Compartilhamento",
-    paragraphs: ["Nao vendemos dados pessoais. O compartilhamento acontece apenas quando necessario:"],
+    title: "3. Como Usamos os Dados",
     bullets: [
+      "Criar e manter sua conta.",
+      "Fornecer, operar e melhorar os servicos do WEMOVELT.",
+      "Personalizar a experiencia de treino, metas, historicos e estatisticas.",
+      "Validar check-ins por geolocalizacao ou QR Code.",
+      "Exibir seu perfil, conteudo e interacoes dentro da comunidade do app.",
+      "Enviar notificacoes e comunicacoes relacionadas ao servico, quando autorizadas.",
+      "Prevenir fraude, abuso e uso indevido da plataforma.",
+    ],
+  },
+  {
+    title: "4. Compartilhamento e Visibilidade",
+    paragraphs: ["Nao vendemos dados pessoais. O compartilhamento acontece apenas nos contextos abaixo:"],
+    bullets: [
+      "Com outros usuarios autenticados, quando voce publica conteudo na comunidade ou exibe informacoes do seu perfil dentro do app.",
+      "Com provedores de infraestrutura, autenticacao, armazenamento, notificacao e mapas estritamente necessarios para operar o servico.",
+      "Para cumprimento de obrigacoes legais, regulatorias ou ordens de autoridades competentes.",
       "Com sua autorizacao explicita.",
-      "Para cumprimento de obrigacoes legais.",
-      "Com provedores contratados sob clausulas de confidencialidade.",
     ],
   },
   {
     title: "5. Seguranca",
     paragraphs: [
-      "Aplicamos controles de acesso, autenticacao e protecoes de infraestrutura para reduzir risco de exposicao indevida.",
-      "Mesmo assim, nenhum sistema conectado e isento de falhas ou incidentes.",
+      "Aplicamos controles de acesso, autenticacao, regras de permissao e protecoes de infraestrutura para reduzir risco de exposicao indevida.",
+      "Mesmo assim, nenhum sistema conectado a internet e totalmente isento de falhas ou incidentes.",
     ],
   },
   {
     title: "6. Seus Direitos",
     bullets: [
+      "Confirmar se tratamos seus dados pessoais.",
       "Acessar seus dados pessoais.",
       "Corrigir dados desatualizados ou incompletos.",
-      "Solicitar anonimização ou exclusao quando aplicavel.",
+      "Solicitar anonimizacao, bloqueio ou exclusao quando aplicavel.",
       "Revogar consentimentos fornecidos.",
       "Solicitar portabilidade conforme a LGPD.",
+      "Solicitar informacoes sobre compartilhamento e tratamento.",
     ],
   },
   {
     title: "7. Retencao",
     paragraphs: [
-      "Mantemos os dados enquanto a conta estiver ativa ou enquanto houver necessidade operacional e legal.",
-      "Apos solicitacao de exclusao, os dados sao removidos de acordo com os prazos legais e tecnicos aplicaveis.",
+      "Mantemos os dados enquanto a conta estiver ativa ou enquanto houver necessidade operacional, de seguranca, auditoria e cumprimento legal.",
+      "Apos solicitacao de exclusao, os dados sao tratados conforme os prazos legais e tecnicos aplicaveis, incluindo rotinas de backup quando necessario.",
     ],
   },
   {
-    title: "8. Cookies e Sessao",
+    title: "8. Cookies, Sessao e Armazenamento Local",
     paragraphs: [
-      "Usamos cookies e mecanismos equivalentes para manter sua sessao autenticada e melhorar a experiencia no app e no PWA.",
+      "Usamos cookies, local storage e mecanismos equivalentes para manter sua sessao autenticada, salvar preferencias e melhorar a experiencia no app, no site e no PWA.",
     ],
   },
   {
-    title: "9. Contato",
+    title: "9. Contato e Atualizacoes",
     paragraphs: [
-      "Para exercer seus direitos ou tirar duvidas sobre privacidade, utilize os canais de suporte indicados no aplicativo.",
+      "Esta politica pode ser atualizada para refletir evolucoes do produto ou exigencias legais.",
+      "Para exercer seus direitos ou tirar duvidas sobre privacidade, entre em contato pelo WhatsApp de suporte: +55 11 95213-0972.",
     ],
   },
 ];
@@ -131,5 +139,5 @@ export const termsSections: LegalSection[] = [
   },
 ];
 
-export const privacyLastUpdated = "14 de marco de 2026";
+export const privacyLastUpdated = "26 de marco de 2026";
 export const termsLastUpdated = "14 de marco de 2026";

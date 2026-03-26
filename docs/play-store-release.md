@@ -82,7 +82,10 @@ Recommended first track:
 
 ## 6. Store listing items you still need outside the codebase
 
+- This repo now includes `public/privacy-policy.html`; after publishing the site, use `https://<your-domain>/privacy-policy.html`
+- This repo now includes `public/account-deletion.html`; after publishing the site, use `https://<your-domain>/account-deletion.html`
 - Public privacy policy URL
+- Public account deletion URL
 - App icon and feature graphic for Play listing
 - Short description and full description
 - Screenshots for phone and optional tablet
