@@ -405,7 +405,7 @@ const GymForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="radius">Raio de Check-in (metros)</Label>
+            <Label htmlFor="radius">Raio de registro (metros)</Label>
             <Input
               id="radius"
               type="number"

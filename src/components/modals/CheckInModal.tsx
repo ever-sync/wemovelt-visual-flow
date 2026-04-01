@@ -87,8 +87,8 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
         });
         setStep("success");
       } catch (error) {
-        console.error("Geo check-in error:", error);
-        setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel registrar o check-in.");
+      console.error("Erro ao registrar presenca por GPS:", error);
+      setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel registrar a presenca.");
         setStep("error");
       } finally {
         setIsSubmitting(false);
@@ -136,7 +136,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
       setManualQrCode(normalizedQr);
       setStep("success");
     } catch (error) {
-      console.error("QR check-in error:", error);
+      console.error("Erro ao registrar presenca por QR:", error);
       setErrorMessage(error instanceof Error ? error.message : "Nao foi possivel validar o QR Code.");
       setStep("error");
     } finally {
@@ -166,10 +166,10 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
   };
 
   const renderTitle = () => {
-    if (step === "qr") return "Check-in por QR Code";
-    if (step === "success") return "Check-in concluido";
+    if (step === "qr") return "Registro por QR Code";
+    if (step === "success") return "Registro concluido";
     if (step === "error") return "Nao foi possivel validar";
-    return "Fazer check-in";
+    return "Registrar presenca";
   };
 
   if (!user) {
@@ -177,7 +177,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="app-panel max-w-sm rounded-[1.9rem] border-white/10 bg-card/95 p-0 [&>button]:right-4 [&>button]:top-4 [&>button]:rounded-full [&>button]:border [&>button]:border-white/10 [&>button]:bg-white/[0.05]">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-center text-xl font-bold">Fazer check-in</DialogTitle>
+            <DialogTitle className="text-center text-xl font-bold">Registrar presenca</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 pb-6">
             <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5 text-center text-sm text-muted-foreground">
@@ -202,7 +202,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
         <div className="space-y-4 px-6 pb-6">
           {todayCheckedIn && step === "select" && (
             <div className="rounded-[1.6rem] border border-primary/20 bg-primary/10 p-5 text-center">
-              <p className="text-sm font-semibold text-primary">Check-in ja registrado hoje.</p>
+              <p className="text-sm font-semibold text-primary">Presenca ja registrada hoje.</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Sua sequencia atual esta em {streak} {streak === 1 ? "dia" : "dias"}.
               </p>
@@ -219,7 +219,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
                 <div className="rounded-[1.45rem] border border-amber-500/20 bg-amber-500/10 p-4 text-center">
                   <p className="text-sm font-semibold text-amber-300">Sem conexao</p>
                   <p className="mt-1 text-xs text-amber-100/75">
-                    Check-in por GPS ou QR precisa de internet para registrar sua presenca.
+                    Registro por GPS ou QR precisa de internet para confirmar sua presenca.
                   </p>
                 </div>
               )}
@@ -270,7 +270,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
                 </div>
               </div>
               <div className="space-y-2 text-center">
-                <p className="text-lg font-bold">{isSubmitting ? "Registrando check-in..." : "Localizando voce..."}</p>
+                <p className="text-lg font-bold">{isSubmitting ? "Registrando presenca..." : "Localizando voce..."}</p>
                 <p className="text-sm text-muted-foreground">
                   Aguarde enquanto validamos sua distancia ate a academia.
                 </p>
@@ -293,7 +293,7 @@ const CheckInModal = ({ open, onOpenChange }: CheckInModalProps) => {
                 <div className="rounded-[1.45rem] border border-amber-500/20 bg-amber-500/10 p-4 text-center">
                   <p className="text-sm font-semibold text-amber-300">Sem conexao</p>
                   <p className="mt-1 text-xs text-amber-100/75">
-                    O scanner pode abrir a camera, mas o check-in nao sera enviado sem internet.
+                    O scanner pode abrir a camera, mas o registro nao sera enviado sem internet.
                   </p>
                 </div>
               )}

@@ -62,7 +62,7 @@ const Home = () => {
                 </h2>
               </div>
               <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                Focus
+                Foco
               </div>
             </div>
 
@@ -90,7 +90,7 @@ const Home = () => {
                     <Flame size={16} className="text-primary" />
                   </div>
                   <p className="text-3xl font-bold tracking-[-0.06em]">{completedCount}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">check-ins concluidos</p>
+                  <p className="mt-1 text-xs text-muted-foreground">registros concluidos</p>
                 </div>
 
                 <div className="app-panel-soft rounded-[1.5rem] p-4">
@@ -103,7 +103,7 @@ const Home = () => {
                       {todayEntry?.checked ? <Check size={18} /> : <MapPin size={18} />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">{todayEntry?.checked ? "Check-in ativo" : "Falta registrar"}</p>
+                      <p className="text-sm font-semibold">{todayEntry?.checked ? "Presenca confirmada" : "Falta registrar"}</p>
                       <p className="text-xs text-muted-foreground">
                         {todayEntry?.day ?? "Hoje"} - {todayEntry?.date ?? "--"}
                       </p>
@@ -134,7 +134,7 @@ const Home = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="app-kicker">Semana atual</p>
-              <h2 className="app-section-title mt-1">Check-ins e metas</h2>
+              <h2 className="app-section-title mt-1">Registros e metas</h2>
             </div>
             <button onClick={() => navigate("/frequencia")} className="text-sm font-semibold text-primary">
               Ver tudo
@@ -161,7 +161,7 @@ const Home = () => {
               <Button onClick={() => setCheckInOpen(true)} className="h-12 justify-between rounded-[1.2rem] px-4">
                 <span className="flex items-center gap-2">
                   <MapPin size={18} />
-                  Check-in
+                  Registrar presenca
                 </span>
                 <ArrowRight size={16} />
               </Button>

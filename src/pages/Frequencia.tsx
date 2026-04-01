@@ -58,7 +58,7 @@ const Frequencia = () => {
           <div className="mb-3 flex items-end justify-between">
             <div>
               <p className="app-kicker">Semana</p>
-              <h2 className="app-section-title mt-1">Check-ins</h2>
+              <h2 className="app-section-title mt-1">Registros</h2>
             </div>
             <div className="rounded-full bg-primary/12 px-3 py-1 text-sm font-bold text-primary">{weeklyPercentage}%</div>
           </div>
@@ -83,7 +83,7 @@ const Frequencia = () => {
               <Button onClick={() => setCheckInOpen(true)} className="h-12 justify-between rounded-[1.2rem] px-4">
                 <span className="flex items-center gap-2">
                   <MapPin size={18} />
-                  Check-in
+                  Registrar presenca
                 </span>
                 <ArrowRight size={16} />
               </Button>

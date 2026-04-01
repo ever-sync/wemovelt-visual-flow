@@ -18,7 +18,7 @@ const BrandLockup = ({
   titleClassName,
   kickerClassName,
   title = "WEMOVELT",
-  kicker = "Outdoor fitness",
+  kicker = "Treino ao ar livre",
   compact = false,
 }: BrandLockupProps) => {
   return (

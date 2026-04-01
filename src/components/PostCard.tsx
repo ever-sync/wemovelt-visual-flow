@@ -99,7 +99,7 @@ const PostCard = ({ post, onLike, onComment, onShare, onDelete }: PostCardProps)
         <div className="mb-3 overflow-hidden rounded-[1.5rem]">
           <img
             src={post.image_url}
-            alt="Post"
+            alt="Publicacao"
             className="w-full h-48 object-cover"
             loading="lazy"
             decoding="async"

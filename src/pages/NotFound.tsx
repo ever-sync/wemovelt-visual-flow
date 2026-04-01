@@ -9,7 +9,7 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    logger.warn("404 Error: User attempted to access non-existent route:", location.pathname);
+    logger.warn("Erro 404: usuario tentou acessar uma rota inexistente:", location.pathname);
   }, [location.pathname]);
 
   return (
@@ -29,7 +29,7 @@ const NotFound = () => {
           <Button asChild className="font-bold">
             <Link to="/home">
               <Home className="mr-2 h-4 w-4" />
-              Ir para Home
+              Ir para inicio
             </Link>
           </Button>
 

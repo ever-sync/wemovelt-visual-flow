@@ -7,11 +7,11 @@ export interface LegalSection {
 export const privacySections: LegalSection[] = [
   {
     title: "1. Dados que Coletamos",
-    paragraphs: ["Coletamos apenas os dados necessarios para cadastro, operacao do app, check-ins e recursos sociais do WEMOVELT."],
+    paragraphs: ["Coletamos apenas os dados necessarios para cadastro, operacao do app, registros de presenca e recursos sociais do WEMOVELT."],
     bullets: [
       "Dados de cadastro e autenticacao: nome, e-mail e identificadores de conta.",
       "Dados de perfil: foto/avatar, username, idade, peso, altura, objetivo e nivel de experiencia, quando informados por voce.",
-      "Dados de uso: treinos, habitos, metas, check-ins, curtidas, comentarios e historico de atividade dentro da plataforma.",
+      "Dados de uso: treinos, habitos, metas, registros de presenca, curtidas, comentarios e historico de atividade dentro da plataforma.",
       "Midia enviada por voce: avatar e imagens publicadas em posts.",
       "Dados tecnicos e de notificacao: identificadores de push, tipo de dispositivo, navegador e dados tecnicos basicos quando voce ativa notificacoes.",
     ],
@@ -19,8 +19,8 @@ export const privacySections: LegalSection[] = [
   {
     title: "2. Localizacao, Camera e Notificacoes",
     paragraphs: [
-      "A localizacao e consultada somente quando voce escolhe validar check-in por GPS. Nao fazemos rastreamento continuo em segundo plano.",
-      "A camera e usada apenas quando voce opta por escanear QR Code para validar check-in. O app nao usa a camera fora desse fluxo.",
+      "A localizacao e consultada somente quando voce escolhe validar presenca por GPS. Nao fazemos rastreamento continuo em segundo plano.",
+      "A camera e usada apenas quando voce opta por escanear QR Code para validar presenca. O app nao usa a camera fora desse fluxo.",
       "As notificacoes push sao opcionais e dependem da sua permissao no dispositivo.",
     ],
   },
@@ -30,7 +30,7 @@ export const privacySections: LegalSection[] = [
       "Criar e manter sua conta.",
       "Fornecer, operar e melhorar os servicos do WEMOVELT.",
       "Personalizar a experiencia de treino, metas, historicos e estatisticas.",
-      "Validar check-ins por geolocalizacao ou QR Code.",
+      "Validar registros de presenca por geolocalizacao ou QR Code.",
       "Exibir seu perfil, conteudo e interacoes dentro da comunidade do app.",
       "Enviar notificacoes e comunicacoes relacionadas ao servico, quando autorizadas.",
       "Prevenir fraude, abuso e uso indevido da plataforma.",
@@ -97,7 +97,7 @@ export const termsSections: LegalSection[] = [
   {
     title: "2. O que o app entrega",
     paragraphs: [
-      "O WEMOVELT organiza check-ins, treinos, habitos e interacao entre usuarios em academias e espacos de treino ao ar livre.",
+      "O WEMOVELT organiza registros de presenca, treinos, habitos e interacao entre usuarios em academias e espacos de treino ao ar livre.",
     ],
   },
   {
@@ -111,7 +111,7 @@ export const termsSections: LegalSection[] = [
     bullets: [
       "Nao publicar conteudo ofensivo, ilegal ou fraudulento.",
       "Nao tentar acessar contas ou dados de terceiros.",
-      "Nao usar o servico para manipular check-ins ou estatisticas.",
+      "Nao usar o servico para manipular registros de presenca ou estatisticas.",
       "Respeitar a comunidade e as regras de convivencia.",
     ],
   },

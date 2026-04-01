@@ -156,7 +156,7 @@ export const useHabits = () => {
 
   const toggleHabitMutation = useMutation({
     mutationFn: async ({ habitType, date = today }: { habitType: string; date?: string }) => {
-      if (!user) throw new Error("User not authenticated");
+      if (!user) throw new Error("Usuario nao autenticado");
 
       // Validate habit type
       validateOrThrow(habitTypeSchema, habitType);
@@ -215,7 +215,7 @@ export const useHabits = () => {
       value: number; 
       date?: string;
     }) => {
-      if (!user) throw new Error("User not authenticated");
+      if (!user) throw new Error("Usuario nao autenticado");
       
       // Upsert the log with the value
       const { data: existing } = await supabase

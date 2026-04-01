@@ -50,7 +50,7 @@ export const useGoals = () => {
       unit: string;
       title: string;
     }) => {
-      if (!user) throw new Error("User not authenticated");
+      if (!user) throw new Error("Usuario nao autenticado");
 
       // Validate goal data
       validateOrThrow(goalSchema, goalData);

@@ -12,14 +12,14 @@ interface HelpModalProps {
 
 const faqs = [
   {
-    question: "Como fazer check-in?",
+    question: "Como registrar presenca?",
     answer:
       "Voce pode validar sua presenca por GPS, quando estiver dentro do raio da academia, ou por QR Code em equipamentos cadastrados.",
   },
   {
     question: "O QR Code funciona de verdade?",
     answer:
-      "Sim. O app agora valida o codigo pelo backend. Se o equipamento estiver vinculado a uma academia, o check-in entra com integridade no Supabase.",
+      "Sim. O app agora valida o codigo pelo backend. Se o equipamento estiver vinculado a uma academia, o registro entra com integridade no Supabase.",
   },
   {
     question: "Posso montar meu proprio treino?",
@@ -29,7 +29,7 @@ const faqs = [
   {
     question: "Como acompanho frequencia e metas?",
     answer:
-      "Na aba Frequencia voce encontra check-ins da semana, metas ativas e seu ritmo atual sem depender de consulta manual em varias telas.",
+      "Na aba Frequencia voce encontra os registros da semana, metas ativas e seu ritmo atual sem depender de consulta manual em varias telas.",
   },
 ];
 
@@ -58,7 +58,7 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
           <div className="rounded-[1.55rem] border border-primary/15 bg-primary/10 p-4">
             <div className="mb-2 flex items-center gap-2 text-primary">
               <QrCode size={18} />
-              <span className="text-sm font-semibold uppercase tracking-[0.16em]">Check-in seguro</span>
+              <span className="text-sm font-semibold uppercase tracking-[0.16em]">Registro seguro</span>
             </div>
             <p className="text-sm leading-6 text-foreground/82">
               Validacao por GPS e QR Code agora roda com regra server-side. O cliente so dispara a tentativa.

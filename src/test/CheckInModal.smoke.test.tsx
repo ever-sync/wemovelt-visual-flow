@@ -46,10 +46,10 @@ vi.mock("@/hooks/useGeolocation", () => ({
 }));
 
 describe("CheckInModal smoke", () => {
-  it("renders both check-in entry points", () => {
+  it("renderiza os dois pontos de entrada de presenca", () => {
     render(<CheckInModal open onOpenChange={vi.fn()} />);
 
-    expect(screen.getByText("Fazer check-in")).toBeInTheDocument();
+    expect(screen.getByText("Registrar presenca")).toBeInTheDocument();
     expect(screen.getByText("Validar por GPS")).toBeInTheDocument();
     expect(screen.getByText("Escanear QR Code")).toBeInTheDocument();
   });

@@ -12,7 +12,7 @@ const deletionSteps = [
 
 const dataScope = [
   "Perfil, autenticacao e preferencias da conta.",
-  "Treinos, habitos, metas, check-ins e historico de uso.",
+  "Treinos, habitos, metas, registros de presenca e historico de uso.",
   "Posts, comentarios, curtidas e midia enviada por voce.",
   "Subscricoes de notificacao e dados tecnicos vinculados a conta.",
 ];

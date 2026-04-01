@@ -70,10 +70,10 @@ const normalizeCheckInError = (error: unknown): Error => {
   const message = error instanceof Error ? error.message : String(error);
 
   if (message.includes("CHECKIN_ALREADY_REGISTERED_TODAY")) {
-    return new Error("Voce ja registrou check-in hoje.");
+    return new Error("Voce ja registrou presenca hoje.");
   }
   if (message.includes("CHECKIN_OUTSIDE_ALLOWED_RADIUS")) {
-    return new Error("Voce esta fora do raio permitido para check-in.");
+    return new Error("Voce esta fora do raio permitido para registro.");
   }
   if (message.includes("INVALID_QR_CODE")) {
     return new Error("QR Code invalido ou nao cadastrado.");
@@ -82,7 +82,7 @@ const normalizeCheckInError = (error: unknown): Error => {
     return new Error("Informe um QR Code valido.");
   }
   if (message.includes("MISSING_GEO_CHECKIN_DATA")) {
-    return new Error("Dados de localizacao insuficientes para check-in.");
+    return new Error("Dados de localizacao insuficientes para registro.");
   }
   if (message.includes("GYM_NOT_FOUND")) {
     return new Error("Academia nao encontrada.");
