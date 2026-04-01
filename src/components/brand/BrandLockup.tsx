@@ -24,7 +24,7 @@ const BrandLockup = ({
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <img
-        src="/logo-mark.svg"
+        src="/logo-mark.png"
         alt="WEMOVELT"
         className={cn(
           "h-10 w-10 select-none object-contain drop-shadow-[0_10px_24px_rgba(255,102,0,0.28)]",

@@ -1,20 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="WEMOVELT WM">
-  <defs>
-    <linearGradient id="wmBadge" x1="32" y1="24" x2="208" y2="224" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ff8b2d" />
-      <stop offset="1" stop-color="#ff6a00" />
-    </linearGradient>
-  </defs>
-  <circle cx="128" cy="128" r="112" fill="url(#wmBadge)" />
-  <ellipse cx="112" cy="86" rx="48" ry="20" fill="#fff" opacity=".14" />
+  <rect x="8" y="8" width="240" height="240" rx="42" fill="#ff6a00" />
   <text
     x="128"
-    y="136"
-    fill="#111111"
-    font-family="Space Grotesk, Arial Black, Arial, sans-serif"
-    font-size="68"
-    font-weight="700"
-    letter-spacing="-0.06em"
+    y="182"
+    fill="#000000"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="88"
+    font-weight="900"
+    letter-spacing="-0.05em"
     text-anchor="middle"
   >
     WM

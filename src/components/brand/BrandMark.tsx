@@ -14,7 +14,7 @@ const BrandMark = ({ className, imageClassName }: BrandMarkProps) => {
       )}
     >
       <img
-        src="/logo-mark.svg"
+        src="/logo-mark.png"
         alt="WEMOVELT"
         className={cn("h-11 w-11 select-none object-contain", imageClassName)}
         draggable={false}
