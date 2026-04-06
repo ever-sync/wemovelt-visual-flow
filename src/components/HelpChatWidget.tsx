@@ -27,6 +27,13 @@ type ChatOptions = {
 };
 
 type CreateChatFn = (options: ChatOptions) => void;
+type ChatApi = {
+  open?: () => void;
+  show?: () => void;
+};
+type WindowWithChatApi = Window & {
+  __wemoveltChatApi?: ChatApi;
+};
 
 const isAllowedPath = (pathname: string) =>
   ALLOWED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -43,6 +50,45 @@ const ensureChatStyle = () => {
 
 const removeChatDom = () => {
   document.querySelectorAll(".n8n-chat, .n8n-chat-widget, .n8n-chat-window").forEach((node) => node.remove());
+};
+
+const openLiveChat = () => {
+  const windowWithApi = window as WindowWithChatApi;
+  const api = windowWithApi.__wemoveltChatApi;
+
+  if (typeof api?.open === "function") {
+    api.open();
+    return;
+  }
+
+  if (typeof api?.show === "function") {
+    api.show();
+    return;
+  }
+
+  const selectors = [
+    ".n8n-chat-toggle",
+    ".n8n-chat__toggle",
+    ".chat-window-toggle",
+    "button[aria-label*='chat']",
+    "button[aria-label*='Chat']",
+    "button[title*='chat']",
+    "button[title*='Chat']",
+  ];
+
+  for (const selector of selectors) {
+    const button = document.querySelector<HTMLButtonElement>(selector);
+    if (button) {
+      button.click();
+      return;
+    }
+  }
+
+  const fallbackButton = Array.from(document.querySelectorAll<HTMLButtonElement>(".n8n-chat button")).find(
+    (button) => button.className.includes("toggle"),
+  );
+
+  fallbackButton?.click();
 };
 
 const HelpChatWidget = () => {
@@ -77,7 +123,7 @@ const HelpChatWidget = () => {
         }
 
         removeChatDom();
-        createChat({
+        const chatApi = createChat({
           webhookUrl: CHAT_WEBHOOK_URL,
           showWelcomeScreen: false,
           initialMessages: [
@@ -97,6 +143,8 @@ const HelpChatWidget = () => {
             userId: user.id,
           },
         });
+
+        (window as WindowWithChatApi).__wemoveltChatApi = (chatApi as ChatApi) ?? undefined;
       })
       .catch((error: unknown) => {
         logger.error("Falha ao carregar chat de ajuda:", error);
@@ -106,6 +154,18 @@ const HelpChatWidget = () => {
       cancelled = true;
     };
   }, [loading, user, location.pathname]);
+
+  useEffect(() => {
+    const handleOpenChat = () => {
+      openLiveChat();
+    };
+
+    window.addEventListener("wemovelt:open-live-chat", handleOpenChat);
+
+    return () => {
+      window.removeEventListener("wemovelt:open-live-chat", handleOpenChat);
+    };
+  }, []);
 
   return null;
 };

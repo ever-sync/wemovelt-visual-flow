@@ -44,6 +44,14 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
     void openWhatsApp("Ola! Preciso de ajuda com o app WEMOVELT");
   };
 
+  const handleOpenLiveChat = () => {
+    onOpenChange(false);
+
+    setTimeout(() => {
+      window.dispatchEvent(new Event("wemovelt:open-live-chat"));
+    }, 180);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="app-panel max-w-sm rounded-[1.9rem] border-white/10 bg-card/95 p-0 [&>button]:right-4 [&>button]:top-4 [&>button]:rounded-full [&>button]:border [&>button]:border-white/10 [&>button]:bg-white/[0.05]">
@@ -99,6 +107,10 @@ const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
           ) : null}
 
           <div className="grid grid-cols-1 gap-3">
+            <Button onClick={handleOpenLiveChat} className="w-full justify-center gap-2">
+              <MessageCircle size={18} />
+              Chat ao vivo
+            </Button>
             <Button onClick={handleWhatsAppPersonal} className="w-full justify-center gap-2">
               <MessageCircle size={18} />
               Chamar personal
