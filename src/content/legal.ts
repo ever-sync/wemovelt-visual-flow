@@ -11,8 +11,8 @@ export const privacySections: LegalSection[] = [
     bullets: [
       "Dados de cadastro e autenticacao: nome, e-mail e identificadores de conta.",
       "Dados de perfil: foto/avatar, username, idade, peso, altura, objetivo e nivel de experiencia, quando informados por voce.",
-      "Dados de uso: treinos, habitos, metas, registros de presenca, curtidas, comentarios e historico de atividade dentro da plataforma.",
-      "Midia enviada por voce: avatar e imagens publicadas em posts.",
+      "Dados de uso: treinos, habitos, metas, registros de presenca e historico de atividade dentro da plataforma.",
+      "Midia enviada por voce: avatar e imagens de perfil.",
       "Dados tecnicos e de notificacao: identificadores de push, tipo de dispositivo, navegador e dados tecnicos basicos quando voce ativa notificacoes.",
     ],
   },
@@ -31,7 +31,7 @@ export const privacySections: LegalSection[] = [
       "Fornecer, operar e melhorar os servicos do WEMOVELT.",
       "Personalizar a experiencia de treino, metas, historicos e estatisticas.",
       "Validar registros de presenca por geolocalizacao ou QR Code.",
-      "Exibir seu perfil, conteudo e interacoes dentro da comunidade do app.",
+      "Exibir seu perfil e informacoes dentro do app.",
       "Enviar notificacoes e comunicacoes relacionadas ao servico, quando autorizadas.",
       "Prevenir fraude, abuso e uso indevido da plataforma.",
     ],
@@ -40,7 +40,7 @@ export const privacySections: LegalSection[] = [
     title: "4. Compartilhamento e Visibilidade",
     paragraphs: ["Nao vendemos dados pessoais. O compartilhamento acontece apenas nos contextos abaixo:"],
     bullets: [
-      "Com outros usuarios autenticados, quando voce publica conteudo na comunidade ou exibe informacoes do seu perfil dentro do app.",
+      "Com outros usuarios autenticados apenas quando necessario para funcionalidades internas do app.",
       "Com provedores de infraestrutura, autenticacao, armazenamento, notificacao e mapas estritamente necessarios para operar o servico.",
       "Para cumprimento de obrigacoes legais, regulatorias ou ordens de autoridades competentes.",
       "Com sua autorizacao explicita.",
@@ -112,13 +112,13 @@ export const termsSections: LegalSection[] = [
       "Nao publicar conteudo ofensivo, ilegal ou fraudulento.",
       "Nao tentar acessar contas ou dados de terceiros.",
       "Nao usar o servico para manipular registros de presenca ou estatisticas.",
-      "Respeitar a comunidade e as regras de convivencia.",
+      "Respeitar outros usuarios e as regras de convivencia da plataforma.",
     ],
   },
   {
     title: "5. Conteudo publicado",
     paragraphs: [
-      "O conteudo continua sendo seu, mas voce autoriza sua exibicao dentro da plataforma para funcionamento do feed e interacoes sociais.",
+      "O conteudo continua sendo seu, mas voce autoriza sua exibicao dentro da plataforma para funcionamento das funcionalidades do app.",
     ],
   },
   {

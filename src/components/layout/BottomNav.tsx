@@ -1,4 +1,4 @@
-import { Home, Dumbbell, Heart, BarChart3, Users } from "lucide-react";
+import { Home, Dumbbell, Heart, BarChart3 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +7,6 @@ const navItems = [
   { icon: Dumbbell, label: "Treinos", path: "/treinos" },
   { icon: Heart, label: "Habitos", path: "/habitos" },
   { icon: BarChart3, label: "Frequencia", path: "/frequencia" },
-  { icon: Users, label: "Comunidade", path: "/comunidade" },
 ];
 
 const BottomNav = () => {

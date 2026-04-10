@@ -158,12 +158,12 @@ const Home = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button onClick={() => setCheckInOpen(true)} className="h-12 justify-between rounded-[1.2rem] px-4">
-                <span className="flex items-center gap-2">
-                  <MapPin size={18} />
-                  Registrar presenca
+              <Button onClick={() => setCheckInOpen(true)} className="h-12 rounded-[1.2rem] px-3">
+                <span className="flex min-w-0 items-center gap-2">
+                  <MapPin size={18} className="shrink-0" />
+                  <span className="truncate">Registrar presenca</span>
                 </span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="ml-auto shrink-0" />
               </Button>
               <Button onClick={() => setGoalOpen(true)} variant="secondary" className="h-12 justify-between rounded-[1.2rem] px-4">
                 <span className="flex items-center gap-2">

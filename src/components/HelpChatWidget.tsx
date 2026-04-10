@@ -5,7 +5,7 @@ import logger from "@/lib/logger";
 
 const CHAT_STYLE_ID = "n8n-chat-style";
 const CHAT_WEBHOOK_URL = import.meta.env.VITE_N8N_CHAT_WEBHOOK_URL as string | undefined;
-const ALLOWED_PATHS = ["/home", "/treinos", "/habitos", "/frequencia", "/comunidade", "/admin"];
+const ALLOWED_PATHS = ["/home", "/treinos", "/habitos", "/frequencia", "/admin"];
 
 type ChatOptions = {
   webhookUrl: string;

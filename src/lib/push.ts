@@ -52,7 +52,7 @@ export const getPushRoute = (type: string, data: Record<string, unknown> | null 
   switch (type) {
     case "like":
     case "comment":
-      return "/comunidade";
+      return "/home";
     case "goal_completed":
     case "streak":
       return "/frequencia";

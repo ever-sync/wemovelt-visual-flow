@@ -33,7 +33,6 @@ export const prefetchPrimaryRoutes = () => {
     void import("@/pages/Treinos");
     void import("@/pages/Habitos");
     void import("@/pages/Frequencia");
-    void import("@/pages/Comunidade");
     void import("@/components/modals/CheckInModal");
     void import("@/components/modals/GoalModal");
   });
