@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,7 +24,7 @@ const WorkoutPlayerModal = ({ workout, open, onOpenChange }: WorkoutPlayerModalP
   
   const { startSession, completeSession, abandonSession } = useWorkoutSessions();
   
-  const exercises = workout?.workout_exercises ?? [];
+  const exercises = useMemo(() => workout?.workout_exercises ?? [], [workout]);
   const currentExercise = exercises[currentExerciseIndex];
   const { equipment } = useEquipmentById(currentExercise?.equipment_id ?? null);
 
@@ -54,7 +54,7 @@ const WorkoutPlayerModal = ({ workout, open, onOpenChange }: WorkoutPlayerModalP
       setElapsedSeconds(0);
       setIsPaused(false);
     }
-  }, [open, workout]);
+  }, [open, workout, sessionId, exercises, startSession]);
 
   // Timer
   useEffect(() => {

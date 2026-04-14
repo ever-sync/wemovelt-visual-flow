@@ -266,4 +266,20 @@
   .leaflet-popup {
     z-index: 400 !important;
   }
+
+  /* Chat widgets acima do menu de rodape no mobile */
+  @media (max-width: 768px) {
+    .n8n-chat-toggle,
+    .n8n-chat__toggle,
+    .chat-window-toggle {
+      bottom: calc(9rem + env(safe-area-inset-bottom)) !important;
+      right: 1rem !important;
+      z-index: 55 !important;
+    }
+
+    .n8n-chat-window,
+    .n8n-chat-widget {
+      bottom: calc(11.5rem + env(safe-area-inset-bottom)) !important;
+    }
+  }
 }

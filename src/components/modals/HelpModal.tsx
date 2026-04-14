@@ -3,6 +3,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Check, Download, HelpCircle, MessageCircle, QrCode, Smartphone } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useNavigate } from "react-router-dom";
 
 interface HelpModalProps {
   open: boolean;
@@ -34,13 +35,11 @@ const faqs = [
 
 const HelpModal = ({ open, onOpenChange }: HelpModalProps) => {
   const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
+  const navigate = useNavigate();
 
   const handleOpenLiveChat = () => {
     onOpenChange(false);
-
-    setTimeout(() => {
-      window.dispatchEvent(new Event("wemovelt:open-live-chat"));
-    }, 180);
+    navigate("/chat");
   };
 
   return (

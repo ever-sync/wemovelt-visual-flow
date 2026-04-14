@@ -8,10 +8,13 @@ const DEFAULT_CHAT_WEBHOOK_URL =
   "https://temp-n8n-n8n-start.ecfojw.easypanel.host/webhook/61f4e12e-a7e7-43c4-843c-f2bddba4e58c/chat";
 const CHAT_WEBHOOK_URL = (import.meta.env.VITE_N8N_CHAT_WEBHOOK_URL as string | undefined) ?? DEFAULT_CHAT_WEBHOOK_URL;
 const ALLOWED_PATHS = ["/home", "/treinos", "/habitos", "/frequencia", "/admin"];
+const MOBILE_CHAT_BOTTOM = "calc(9rem + env(safe-area-inset-bottom))";
 
 type ChatOptions = {
   webhookUrl: string;
-  sessionId: string;
+  chatSessionKey?: string;
+  loadPreviousSession?: boolean;
+  mode?: "window" | "fullscreen";
   showWelcomeScreen: boolean;
   initialMessages: string[];
   i18n: {
@@ -53,6 +56,68 @@ const ensureChatStyle = () => {
 
 const removeChatDom = () => {
   document.querySelectorAll(".n8n-chat, .n8n-chat-widget, .n8n-chat-window").forEach((node) => node.remove());
+};
+
+const applyMobileChatOffset = () => {
+  if (!window.matchMedia("(max-width: 768px)").matches) return;
+
+  const floatingButtons = document.querySelectorAll<HTMLElement>(".n8n-chat-toggle, .n8n-chat__toggle, .chat-window-toggle");
+
+  floatingButtons.forEach((button) => {
+    button.style.setProperty("bottom", MOBILE_CHAT_BOTTOM, "important");
+    button.style.setProperty("right", "1rem", "important");
+    button.style.setProperty("z-index", "55", "important");
+  });
+
+  const fallbackButtons = Array.from(document.querySelectorAll<HTMLElement>(".n8n-chat button")).filter((button) => {
+    const style = window.getComputedStyle(button);
+    return style.position === "fixed" && parseFloat(style.bottom || "0") < 220;
+  });
+
+  fallbackButtons.forEach((button) => {
+    button.style.setProperty("bottom", MOBILE_CHAT_BOTTOM, "important");
+    button.style.setProperty("right", "1rem", "important");
+    button.style.setProperty("z-index", "55", "important");
+  });
+
+  const genericFloatingChatButtons = Array.from(
+    document.querySelectorAll<HTMLElement>("button, [role='button'], a"),
+  ).filter((element) => {
+    const style = window.getComputedStyle(element);
+    if (style.position !== "fixed") return false;
+
+    const rect = element.getBoundingClientRect();
+    const right = Number.parseFloat(style.right || "999");
+    const bottom = Number.parseFloat(style.bottom || "999");
+    const label = (element.getAttribute("aria-label") || element.getAttribute("title") || element.textContent || "").toLowerCase();
+
+    if (label.includes("chamar personal")) return false;
+    if (label.includes("instalar")) return false;
+    if (label.includes("sair")) return false;
+
+    const looksLikeFab = rect.width >= 44 && rect.width <= 96 && rect.height >= 44 && rect.height <= 96;
+    const nearBottomRight = right <= 28 && bottom <= 220;
+
+    return looksLikeFab && nearBottomRight;
+  });
+
+  genericFloatingChatButtons.forEach((button) => {
+    button.style.setProperty("bottom", MOBILE_CHAT_BOTTOM, "important");
+    button.style.setProperty("right", "1rem", "important");
+    button.style.setProperty("z-index", "55", "important");
+  });
+};
+
+const hideChatFloatingToggle = () => {
+  const toggles = document.querySelectorAll<HTMLElement>(
+    ".n8n-chat-toggle, .n8n-chat__toggle, .chat-window-toggle, .n8n-chat [aria-label*='chat'], .n8n-chat [title*='chat']",
+  );
+
+  toggles.forEach((toggle) => {
+    toggle.style.setProperty("display", "none", "important");
+    toggle.style.setProperty("visibility", "hidden", "important");
+    toggle.style.setProperty("pointer-events", "none", "important");
+  });
 };
 
 const openLiveChat = () => {
@@ -111,6 +176,7 @@ const HelpChatWidget = () => {
     }
 
     let cancelled = false;
+    let observer: MutationObserver | null = null;
 
     ensureChatStyle();
 
@@ -126,19 +192,22 @@ const HelpChatWidget = () => {
         }
 
         removeChatDom();
+        localStorage.setItem("sessionId", user.id);
         const chatApi = createChat({
           webhookUrl: CHAT_WEBHOOK_URL,
-          sessionId: user.id,
+          chatSessionKey: "sessionId",
+          loadPreviousSession: true,
+          mode: "window",
           showWelcomeScreen: false,
           initialMessages: [
-            "Ola! Bem-vindo a wemovelt! :muscle:\nSou seu personal trainer de academia ao ar livre. Vamos montar seu treino?",
+            "Olá! Bem-vindo à wemovelt! :muscle:\nSou seu personal trainer de academia ao ar livre. Vamos montar seu treino?",
           ],
           i18n: {
             en: {
               title: "wemovelt :herb:",
               subtitle: "Seu personal trainer ao ar livre",
               footer: "",
-              getStarted: "Comecar treino",
+              getStarted: "Começar treino",
               inputPlaceholder: "Digite sua mensagem...",
             },
           },
@@ -148,6 +217,19 @@ const HelpChatWidget = () => {
           },
         });
 
+        applyMobileChatOffset();
+        hideChatFloatingToggle();
+        window.setTimeout(applyMobileChatOffset, 200);
+        window.setTimeout(() => {
+          hideChatFloatingToggle();
+        }, 220);
+
+        observer = new MutationObserver(() => {
+          applyMobileChatOffset();
+          hideChatFloatingToggle();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         (window as WindowWithChatApi).__wemoveltChatApi = (chatApi as ChatApi) ?? undefined;
       })
       .catch((error: unknown) => {
@@ -156,6 +238,7 @@ const HelpChatWidget = () => {
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
     };
   }, [loading, user, location.pathname]);
 

@@ -21,6 +21,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Treinos = lazy(() => import("./pages/Treinos"));
 const Habitos = lazy(() => import("./pages/Habitos"));
 const Frequencia = lazy(() => import("./pages/Frequencia"));
+const Chat = lazy(() => import("./pages/Chat"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
 const Termos = lazy(() => import("./pages/Termos"));
@@ -76,6 +77,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Frequencia />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           }
         />
