@@ -337,7 +337,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                       : "text-muted-foreground",
                   )}
                 >
-                  Sign up
+                  Cadastro
                 </button>
               </div>
             )}
@@ -351,7 +351,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                       id="name"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
-                      placeholder="Name"
+                      placeholder="Nome"
                       className={`${inputClassName} pl-11`}
                       disabled={loading}
                     />
@@ -368,7 +368,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder="Email Address"
+                    placeholder="Seu e-mail"
                     className={`${inputClassName} pl-11`}
                     disabled={loading}
                   />
@@ -385,7 +385,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Password"
+                      placeholder="Senha"
                       className={`${inputClassName} pl-11 pr-11`}
                       disabled={loading}
                     />
@@ -410,7 +410,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}
-                      placeholder="Confirm Password"
+                      placeholder="Confirmar senha"
                       className={`${inputClassName} pl-11 pr-11`}
                       disabled={loading}
                     />
@@ -434,19 +434,19 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                     onChange={(event) => setRememberMe(event.target.checked)}
                     className="h-4 w-4 rounded border-white/15 bg-transparent accent-[hsl(var(--primary))]"
                   />
-                  Remember me
+                  Lembrar de mim
                 </label>
 
                 {currentMode === "login" && !resetMode ? (
                   <button type="button" onClick={() => setResetMode(true)} className="text-foreground hover:text-primary">
-                    Forgot password
+                    Esqueci minha senha
                   </button>
                 ) : resetMode ? (
                   <button type="button" onClick={() => setResetMode(false)} className="text-foreground hover:text-primary">
-                    Back to login
+                    Voltar para o login
                   </button>
                 ) : (
-                  <span>Secure access</span>
+                  <span>Acesso seguro</span>
                 )}
               </div>
 
@@ -470,7 +470,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                 ) : signupCooldownMs > 0 ? (
                   `Aguarde ${formatCooldown(signupCooldownMs)}`
                 ) : (
-                  "Sign up"
+                  "Criar conta"
                 )}
               </Button>
 
@@ -478,7 +478,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                 <>
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-white/10" />
-                    <span className="text-[0.72rem] text-muted-foreground">Or login with</span>
+                    <span className="text-[0.72rem] text-muted-foreground">Ou continue com</span>
                     <div className="h-px flex-1 bg-white/10" />
                   </div>
 
