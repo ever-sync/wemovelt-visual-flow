@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import TurnstileWidget from "@/components/auth/TurnstileWidget";
 
 interface AuthModalProps {
   open: boolean;
@@ -30,8 +31,73 @@ const registerSchema = loginSchema
     message: "As senhas nao conferem.",
   });
 
+type AuthLikeError = Error & {
+  status?: number;
+  code?: string;
+};
+
+const SIGNUP_ATTEMPT_WINDOW_MS = 60_000;
+const SIGNUP_RATE_LIMIT_BACKOFF_MS = 5 * 60_000;
+const SIGNUP_LAST_ATTEMPT_AT_KEY = "wemovelt.auth.signup.lastAttemptAt";
+const SIGNUP_LAST_ATTEMPT_EMAIL_KEY = "wemovelt.auth.signup.lastAttemptEmail";
+const SIGNUP_BLOCKED_UNTIL_KEY = "wemovelt.auth.signup.blockedUntil";
+
+const getSignupCooldownMs = (email: string) => {
+  if (typeof window === "undefined") {
+    return 0;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const now = Date.now();
+  const blockedUntil = Number(window.localStorage.getItem(SIGNUP_BLOCKED_UNTIL_KEY) ?? 0);
+  const lastAttemptAt = Number(window.localStorage.getItem(SIGNUP_LAST_ATTEMPT_AT_KEY) ?? 0);
+  const lastAttemptEmail = window.localStorage.getItem(SIGNUP_LAST_ATTEMPT_EMAIL_KEY) ?? "";
+
+  const sameEmailCooldown =
+    lastAttemptEmail === normalizedEmail ? Math.max(0, lastAttemptAt + SIGNUP_ATTEMPT_WINDOW_MS - now) : 0;
+  const globalCooldown = Math.max(0, blockedUntil - now);
+
+  return Math.max(sameEmailCooldown, globalCooldown);
+};
+
+const storeSignupAttempt = (email: string) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SIGNUP_LAST_ATTEMPT_AT_KEY, String(Date.now()));
+  window.localStorage.setItem(SIGNUP_LAST_ATTEMPT_EMAIL_KEY, email.trim().toLowerCase());
+};
+
+const storeSignupRateLimitBlock = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SIGNUP_BLOCKED_UNTIL_KEY, String(Date.now() + SIGNUP_RATE_LIMIT_BACKOFF_MS));
+};
+
+const formatCooldown = (cooldownMs: number) => {
+  const totalSeconds = Math.max(1, Math.ceil(cooldownMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+};
+
 const getErrorMessage = (error: Error): string => {
+  const authError = error as AuthLikeError;
   const message = error.message.toLowerCase();
+  const code = authError.code?.toLowerCase();
+  const status = authError.status;
+
+  if (status === 429 || code === "over_request_rate_limit" || code === "over_email_send_rate_limit") {
+    return "Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.";
+  }
 
   if (message.includes("user already registered") || message.includes("already exists")) {
     return "Este e-mail ja esta cadastrado.";
@@ -64,9 +130,15 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaRenderKey, setCaptchaRenderKey] = useState(0);
+  const [signupCooldownMs, setSignupCooldownMs] = useState(0);
 
   const { signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const shouldShowCaptcha = Boolean(turnstileSiteKey) && (currentMode === "register" || resetMode);
+  const normalizedEmail = email.trim().toLowerCase();
 
   useEffect(() => {
     if (open) {
@@ -85,13 +157,34 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
     setRememberMe(true);
     setResetMode(false);
     setErrors({});
+    setCaptchaToken(null);
+    setCaptchaRenderKey((current) => current + 1);
+    setSignupCooldownMs(0);
   };
 
   const setMode = (nextMode: "login" | "register") => {
     setCurrentMode(nextMode);
     setResetMode(false);
     setErrors({});
+    setCaptchaToken(null);
+    setCaptchaRenderKey((current) => current + 1);
   };
+
+  useEffect(() => {
+    if (!open || resetMode || currentMode !== "register" || !normalizedEmail) {
+      setSignupCooldownMs(0);
+      return;
+    }
+
+    const syncCooldown = () => {
+      setSignupCooldownMs(getSignupCooldownMs(normalizedEmail));
+    };
+
+    syncCooldown();
+    const intervalId = window.setInterval(syncCooldown, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [currentMode, normalizedEmail, open, resetMode]);
 
   const validateForm = () => {
     try {
@@ -120,12 +213,36 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (loading) return;
     if (!validateForm()) return;
+
+    if (!resetMode && currentMode === "register") {
+      const cooldownMs = getSignupCooldownMs(normalizedEmail);
+
+      if (cooldownMs > 0) {
+        setSignupCooldownMs(cooldownMs);
+        toast({
+          title: "Aguarde um instante",
+          description: `Ja recebemos uma tentativa recente para este e-mail. Tente novamente em ${formatCooldown(cooldownMs)}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (shouldShowCaptcha && !captchaToken) {
+      toast({
+        title: "Verificacao necessaria",
+        description: "Conclua o captcha antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
       if (resetMode) {
-        const { error } = await resetPassword(email);
+        const { error } = await resetPassword(email, captchaToken ?? undefined);
         if (error) {
           toast({ title: "Erro", description: getErrorMessage(error), variant: "destructive" });
         } else {
@@ -148,8 +265,16 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
         return;
       }
 
-      const { error } = await signUp(email, password, name);
+      storeSignupAttempt(normalizedEmail);
+      setSignupCooldownMs(getSignupCooldownMs(normalizedEmail));
+
+      const { error } = await signUp(email, password, name, captchaToken ?? undefined);
       if (error) {
+        const authError = error as AuthLikeError;
+        if (authError.status === 429 || authError.code === "over_request_rate_limit" || authError.code === "over_email_send_rate_limit") {
+          storeSignupRateLimitBlock();
+          setSignupCooldownMs(getSignupCooldownMs(normalizedEmail));
+        }
         toast({ title: "Erro ao cadastrar", description: getErrorMessage(error), variant: "destructive" });
       } else {
         toast({
@@ -160,6 +285,10 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
         resetState();
       }
     } finally {
+      if (shouldShowCaptcha) {
+        setCaptchaToken(null);
+        setCaptchaRenderKey((current) => current + 1);
+      }
       setLoading(false);
     }
   };
@@ -343,13 +472,33 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                 )}
               </div>
 
-              <Button type="submit" className="h-[3.25rem] w-full rounded-full text-base font-semibold" disabled={loading}>
+              {shouldShowCaptcha && turnstileSiteKey ? (
+                <TurnstileWidget
+                  key={captchaRenderKey}
+                  siteKey={turnstileSiteKey}
+                  onVerify={setCaptchaToken}
+                />
+              ) : null}
+
+              {!resetMode && currentMode === "register" && signupCooldownMs > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Novo envio liberado em {formatCooldown(signupCooldownMs)}.
+                </p>
+              ) : null}
+
+              <Button
+                type="submit"
+                className="h-[3.25rem] w-full rounded-full text-base font-semibold"
+                disabled={loading || (!resetMode && currentMode === "register" && signupCooldownMs > 0)}
+              >
                 {loading ? (
                   <Loader2 className="animate-spin" size={18} />
                 ) : resetMode ? (
                   "Enviar e-mail"
                 ) : currentMode === "login" ? (
                   "Login"
+                ) : signupCooldownMs > 0 ? (
+                  `Aguarde ${formatCooldown(signupCooldownMs)}`
                 ) : (
                   "Sign up"
                 )}
