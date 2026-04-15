@@ -60,9 +60,9 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <Skeleton className="h-10 w-full" />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2">
           {[1, 2, 3, 4].map(i => (
             <Skeleton key={i} className="h-20" />
           ))}
@@ -72,7 +72,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -85,10 +85,10 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+      <div className="flex min-w-0 gap-2 overflow-x-auto pb-2 scrollbar-hide">
         <button
           onClick={() => setSelectedCategory(null)}
-          className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+          className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
             !selectedCategory ? "wemovelt-gradient" : "bg-secondary hover:bg-secondary/80"
           }`}
         >
@@ -98,7 +98,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap capitalize transition-colors ${
+            className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap capitalize transition-colors ${
               selectedCategory === category ? "wemovelt-gradient" : "bg-secondary hover:bg-secondary/80"
             }`}
           >
@@ -108,12 +108,12 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
       </div>
 
       {/* Equipment Grid */}
-      <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto scrollbar-hide sm:grid-cols-2">
+      <div className="grid max-h-[30dvh] grid-cols-1 gap-2 overflow-y-auto pr-1 scrollbar-hide">
         {filteredEquipment.map((eq) => (
           <button
             key={eq.id}
             onClick={() => toggleExercise(eq)}
-            className={`p-3 rounded-xl text-left transition-all ${
+            className={`w-full min-w-0 rounded-xl p-3 text-left transition-all ${
               isSelected(eq.id)
                 ? "bg-primary/20 border-2 border-primary"
                 : "bg-secondary hover:bg-secondary/80"
@@ -136,13 +136,15 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
 
       {/* Selected Exercises Config */}
       {selectedExercises.length > 0 && (
-        <div className="space-y-2 border-t border-border pt-4">
+        <div className="min-w-0 space-y-2 border-t border-border pt-4">
           <h4 className="font-bold text-sm">Exercícios selecionados ({selectedExercises.length})</h4>
-          <div className="max-h-[44vh] space-y-2 overflow-y-auto pr-1 sm:max-h-[36vh]">
+          <div className="max-h-[32dvh] space-y-2 overflow-y-auto pr-1 sm:max-h-[34dvh]">
             {selectedExercises.map((ex, index) => (
-              <div key={ex.equipment_id} className="rounded-xl bg-secondary p-3">
+              <div key={ex.equipment_id} className="min-w-0 rounded-xl bg-secondary p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-sm">{index + 1}. {ex.name}</span>
+                <span className="min-w-0 pr-2 text-sm font-medium">
+                  <span className="block truncate">{index + 1}. {ex.name}</span>
+                </span>
                 <button
                   onClick={() => toggleExercise({ id: ex.equipment_id } as Equipment)}
                   className="text-muted-foreground hover:text-destructive transition-colors"
@@ -150,7 +152,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
                   <X size={16} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-muted-foreground">Séries</label>
                   <Input
@@ -170,7 +172,7 @@ const ExerciseSelector = ({ selectedExercises, onSelect }: ExerciseSelectorProps
                     className="h-8 text-center bg-background border-0 rounded-lg"
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1">
+                <div className="col-span-2">
                   <label className="text-xs text-muted-foreground">Descanso</label>
                   <Input
                     type="number"

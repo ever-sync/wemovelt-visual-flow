@@ -331,8 +331,8 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-sm animate-scale-in overflow-hidden rounded-2xl border-border bg-card p-0">
-        <div className="flex max-h-[84dvh] flex-col">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-sm animate-scale-in overflow-hidden rounded-2xl border-border bg-card p-0 sm:max-w-[26rem]">
+        <div className="flex max-h-[84dvh] min-w-0 flex-col">
           <DialogHeader className="px-4 pb-2 pt-4 sm:px-6">
             <DialogTitle className="flex items-center justify-center gap-2 text-center text-xl font-bold">
               <Plus className="text-primary" size={24} />
@@ -340,7 +340,7 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-2 flex-1 overflow-y-auto px-3 sm:px-6">
+          <div className="mt-2 flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-5">
           {/* Progress indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {Array.from({ length: totalSteps }).map((_, i) => (
@@ -468,14 +468,14 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
 
           {/* Step 4: Exercises */}
           {step === 4 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="min-w-0 space-y-4 animate-fade-in">
               <div className="text-center mb-4">
                 <Dumbbell className="mx-auto text-primary mb-2" size={32} />
                 <h3 className="font-bold">Selecione os exercícios</h3>
                 <p className="text-sm text-muted-foreground">Escolha e configure cada exercício</p>
               </div>
 
-              <div className="rounded-xl border border-primary/25 bg-primary/10 p-3">
+              <div className="min-w-0 rounded-xl border border-primary/25 bg-primary/10 p-3">
                 <p className="text-xs text-muted-foreground">
                   Montagem inteligente: usa objetivo + anamnese + frequência para sugerir automaticamente.
                 </p>
@@ -483,7 +483,7 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
                   type="button"
                   onClick={handleAutoBuildExercises}
                   variant="secondary"
-                  className="mt-2 w-full rounded-xl"
+                  className="mt-2 min-h-11 w-full rounded-xl px-4 py-3 text-center text-sm leading-tight whitespace-normal"
                   disabled={isLoadingEquipment}
                 >
                   {isLoadingEquipment ? (
@@ -539,7 +539,7 @@ const CreateWorkoutModal = ({ open, onOpenChange }: CreateWorkoutModalProps) => 
           )}
 
           {/* Navigation */}
-          <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur sm:-mx-6 sm:px-6">
+          <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-border bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur sm:-mx-5 sm:px-5">
             <div className="flex gap-3">
             {step > 1 && (
               <Button
