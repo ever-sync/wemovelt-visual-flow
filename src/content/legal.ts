@@ -7,9 +7,9 @@ export interface LegalSection {
 export const privacySections: LegalSection[] = [
   {
     title: "1. Dados que Coletamos",
-    paragraphs: ["Coletamos apenas os dados necessarios para cadastro, operacao do app, registros de presenca e recursos sociais do WEMOVELT."],
+    paragraphs: ["Coletamos apenas os dados necessarios para cadastro, verificacao 18+, operacao do app, registros de presenca e recursos sociais do WEMOVELT."],
     bullets: [
-      "Dados de cadastro e autenticacao: nome, e-mail e identificadores de conta.",
+      "Dados de cadastro e autenticacao: nome, e-mail, data de nascimento, declaracao de maioridade e identificadores de conta.",
       "Dados de perfil: foto/avatar, username, idade, peso, altura, objetivo e nivel de experiencia, quando informados por voce.",
       "Dados de uso: treinos, habitos, metas, registros de presenca e historico de atividade dentro da plataforma.",
       "Midia enviada por voce: avatar e imagens de perfil.",
@@ -28,6 +28,7 @@ export const privacySections: LegalSection[] = [
     title: "3. Como Usamos os Dados",
     bullets: [
       "Criar e manter sua conta.",
+      "Confirmar que o uso do app atende ao requisito minimo de 18 anos.",
       "Fornecer, operar e melhorar os servicos do WEMOVELT.",
       "Personalizar a experiencia de treino, metas, historicos e estatisticas.",
       "Validar registros de presenca por geolocalizacao ou QR Code.",
@@ -103,7 +104,9 @@ export const termsSections: LegalSection[] = [
   {
     title: "3. Cadastro e conta",
     paragraphs: [
+      "O WEMOVELT e exclusivo para pessoas com 18 anos ou mais. Ao criar ou manter uma conta, voce declara cumprir esse requisito.",
       "Voce deve manter seus dados corretos e proteger suas credenciais. O uso da conta e de sua responsabilidade.",
+      "Contas que nao atendam ao requisito de idade podem ser bloqueadas ou encerradas.",
     ],
   },
   {
@@ -139,5 +142,5 @@ export const termsSections: LegalSection[] = [
   },
 ];
 
-export const privacyLastUpdated = "26 de marco de 2026";
-export const termsLastUpdated = "14 de marco de 2026";
+export const privacyLastUpdated = "28 de abril de 2026";
+export const termsLastUpdated = "28 de abril de 2026";

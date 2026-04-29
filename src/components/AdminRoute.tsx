@@ -9,10 +9,10 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, requiresAgeVerification, isAgeGateBlocked } = useAuth();
   const { isAdmin, isLoading } = useUserRole();
 
-  if (loading || isLoading) {
+  if (loading || isLoading || (user && !profile)) {
     return (
       <div className="app-shell flex min-h-screen items-center justify-center p-6">
         <div className="app-panel flex flex-col items-center gap-4 rounded-[2rem] px-8 py-7">
@@ -25,6 +25,17 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  if (requiresAgeVerification || isAgeGateBlocked) {
+    return (
+      <div className="app-shell flex min-h-screen items-center justify-center p-6">
+        <div className="app-panel flex flex-col items-center gap-4 rounded-[2rem] px-8 py-7 text-center">
+          <BrandMark className="orange-glow h-20 w-20 rounded-[2rem]" imageClassName="h-14 w-14" />
+          <p className="text-sm text-muted-foreground">Verificacao de idade obrigatoria.</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {

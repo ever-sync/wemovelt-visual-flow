@@ -3,9 +3,10 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import { CalendarDays, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getAdultBirthDateLimit, getMinimumBirthDate, isAdultBirthDate } from "@/lib/ageGate";
 import { cn } from "@/lib/utils";
 
 interface AuthModalProps {
@@ -23,6 +24,13 @@ const loginSchema = z.object({
 const registerSchema = loginSchema
   .extend({
     name: z.string().min(2, "Nome muito curto."),
+    birthDate: z
+      .string()
+      .min(1, "Informe sua data de nascimento.")
+      .refine((value) => isAdultBirthDate(value), "O WEMOVELT e exclusivo para maiores de 18 anos."),
+    acceptsAgeTerms: z.literal(true, {
+      errorMap: () => ({ message: "Confirme que voce tem 18 anos ou mais e aceita os termos." }),
+    }),
     confirmPassword: z.string().min(6, "Confirme a senha."),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -107,6 +115,18 @@ const getErrorMessage = (error: Error): string => {
   if (message.includes("email not confirmed")) {
     return "Confirme seu e-mail antes de entrar.";
   }
+  if (message.includes("maiores de 18") || message.includes("18 anos")) {
+    return "O WEMOVELT e exclusivo para maiores de 18 anos.";
+  }
+  if (message.includes("data de nascimento")) {
+    return "Informe uma data de nascimento valida.";
+  }
+  if (message.includes("dominio") || message.includes("domain")) {
+    return "Este dominio de e-mail nao pode ser usado para cadastro.";
+  }
+  if (message.includes("database error saving new user")) {
+    return "Nao foi possivel criar a conta. Confira sua data de nascimento e e-mail.";
+  }
   if (message.includes("weak password") || message.includes("password")) {
     return "Senha muito fraca. Use pelo menos 6 caracteres.";
   }
@@ -125,6 +145,8 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
   const [resetMode, setResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [acceptsAgeTerms, setAcceptsAgeTerms] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -134,6 +156,8 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
   const { signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const normalizedEmail = email.trim().toLowerCase();
+  const adultBirthDateLimit = getAdultBirthDateLimit();
+  const minimumBirthDate = getMinimumBirthDate();
 
   useEffect(() => {
     if (open) {
@@ -144,6 +168,8 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
 
   const resetState = () => {
     setName("");
+    setBirthDate("");
+    setAcceptsAgeTerms(false);
     setEmail("");
     setPassword("");
     setConfirmPassword("");
@@ -184,7 +210,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
       } else if (currentMode === "login") {
         loginSchema.parse({ email, password });
       } else {
-        registerSchema.parse({ name, email, password, confirmPassword });
+        registerSchema.parse({ name, email, birthDate, acceptsAgeTerms, password, confirmPassword });
       }
 
       setErrors({});
@@ -250,7 +276,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
       storeSignupAttempt(normalizedEmail);
       setSignupCooldownMs(getSignupCooldownMs(normalizedEmail));
 
-      const { error } = await signUp(email, password, name);
+      const { error } = await signUp(email, password, name, birthDate);
       if (error) {
         const authError = error as AuthLikeError;
         if (authError.status === 429 || authError.code === "over_request_rate_limit" || authError.code === "over_email_send_rate_limit") {
@@ -286,7 +312,7 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="app-panel max-w-sm overflow-hidden rounded-[2.2rem] border-white/10 bg-[#060606] p-0 [&>button]:right-4 [&>button]:top-4 [&>button]:rounded-full [&>button]:border [&>button]:border-white/10 [&>button]:bg-white/[0.05]">
+      <DialogContent className="app-panel max-h-[92vh] max-w-sm overflow-y-auto rounded-[2.2rem] border-white/10 bg-[#060606] p-0 scrollbar-hide [&>button]:right-4 [&>button]:top-4 [&>button]:rounded-full [&>button]:border [&>button]:border-white/10 [&>button]:bg-white/[0.05]">
         <div className="relative">
           <div className="absolute inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_top,rgba(255,102,0,0.3),rgba(255,102,0,0.04)_58%,transparent)]" />
           <div className="absolute left-[-2rem] top-24 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
@@ -369,6 +395,25 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                 {renderFieldError("email")}
               </div>
 
+              {currentMode === "register" && !resetMode && (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={birthDate}
+                      onChange={(event) => setBirthDate(event.target.value)}
+                      min={minimumBirthDate}
+                      max={adultBirthDateLimit}
+                      className={`${inputClassName} pl-11`}
+                      disabled={loading}
+                    />
+                  </div>
+                  {renderFieldError("birthDate")}
+                </div>
+              )}
+
               {!resetMode && (
                 <div className="space-y-2">
                   <div className="relative">
@@ -419,6 +464,24 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                 </div>
               )}
 
+              {currentMode === "register" && !resetMode && (
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 rounded-[1.1rem] border border-white/8 bg-white/[0.04] p-3 text-xs leading-5 text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={acceptsAgeTerms}
+                      onChange={(event) => setAcceptsAgeTerms(event.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-white/15 bg-transparent accent-[hsl(var(--primary))]"
+                      disabled={loading}
+                    />
+                    <span>
+                      Declaro que tenho 18 anos ou mais e aceito os Termos de Uso e a Politica de Privacidade.
+                    </span>
+                  </label>
+                  {renderFieldError("acceptsAgeTerms")}
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-3 pt-1 text-xs text-muted-foreground">
                 <label className="flex items-center gap-2">
                   <input
@@ -439,7 +502,10 @@ const AuthModal = ({ open, onOpenChange, mode, onSuccess }: AuthModalProps) => {
                     Voltar para o login
                   </button>
                 ) : (
-                  <span>Acesso seguro</span>
+                  <span className="inline-flex items-center gap-1">
+                    <ShieldCheck size={14} />
+                    18+
+                  </span>
                 )}
               </div>
 

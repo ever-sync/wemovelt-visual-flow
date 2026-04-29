@@ -8,9 +8,9 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, requiresAgeVerification, isAgeGateBlocked } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !profile)) {
     return (
       <div className="app-shell flex min-h-screen items-center justify-center p-6">
         <div className="app-panel flex flex-col items-center gap-4 rounded-[2rem] px-8 py-7">
@@ -23,6 +23,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  if (requiresAgeVerification || isAgeGateBlocked) {
+    return (
+      <div className="app-shell flex min-h-screen items-center justify-center p-6">
+        <div className="app-panel flex flex-col items-center gap-4 rounded-[2rem] px-8 py-7 text-center">
+          <BrandMark className="orange-glow h-20 w-20 rounded-[2rem]" imageClassName="h-14 w-14" />
+          <p className="text-sm text-muted-foreground">Verificacao de idade obrigatoria.</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

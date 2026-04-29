@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import AvatarUpload from "@/components/AvatarUpload";
 import BrandLockup from "@/components/brand/BrandLockup";
 import { useAuth } from "@/contexts/AuthContext";
+import { MINIMUM_ACCOUNT_AGE } from "@/lib/ageGate";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -71,6 +72,11 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
 
     if (!formData.experience_level) {
       toast.error("Por favor, selecione seu nivel de experiencia");
+      return;
+    }
+
+    if (formData.age && Number(formData.age) < MINIMUM_ACCOUNT_AGE) {
+      toast.error("O WEMOVELT e exclusivo para maiores de 18 anos");
       return;
     }
 
@@ -170,6 +176,7 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
                 <Input
                   id="age"
                   type="number"
+                  min={MINIMUM_ACCOUNT_AGE}
                   placeholder="25"
                   value={formData.age}
                   onChange={(event) => setFormData((prev) => ({ ...prev, age: event.target.value }))}

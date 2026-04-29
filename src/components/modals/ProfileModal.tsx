@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AvatarUpload from "@/components/AvatarUpload";
 import { profileSchema, validateSafe } from "@/lib/validations";
 import { sanitizeText, sanitizeInteger } from "@/lib/sanitize";
+import { MINIMUM_ACCOUNT_AGE } from "@/lib/ageGate";
 
 interface ProfileModalProps {
   open: boolean;
@@ -60,10 +61,15 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   }, [profile, open]);
 
   const handleSave = async () => {
+    if (formData.age && Number(formData.age) < MINIMUM_ACCOUNT_AGE) {
+      toast.error("O WEMOVELT e exclusivo para maiores de 18 anos");
+      return;
+    }
+
     // Sanitize all inputs
     const sanitizedData = {
       name: sanitizeText(formData.name),
-      age: sanitizeInteger(formData.age, 13, 120),
+      age: sanitizeInteger(formData.age, MINIMUM_ACCOUNT_AGE, 120),
       weight: sanitizeInteger(formData.weight, 20, 500),
       height: sanitizeInteger(formData.height, 50, 300),
       goal: formData.goal || null,
@@ -160,6 +166,7 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
               <Input
                 id="age"
                 type="number"
+                min={MINIMUM_ACCOUNT_AGE}
                 placeholder="25"
                 className="h-12 bg-secondary border-border rounded-xl text-center"
                 value={formData.age}

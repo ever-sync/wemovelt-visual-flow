@@ -13,6 +13,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import AuthDeepLinkBridge from "./components/AuthDeepLinkBridge";
 import PWAStatus from "@/components/PWAStatus";
 import HelpChatWidget from "@/components/HelpChatWidget";
+import AgeGateModal from "@/components/modals/AgeGateModal";
 
 const Welcome = lazy(() => import("./pages/Welcome"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -141,6 +142,7 @@ const App = () => {
             <AuthProvider>
               <AuthDeepLinkBridge />
               <HelpChatWidget />
+              <AgeGateModal />
               <AppContent />
             </AuthProvider>
           </BrowserRouter>

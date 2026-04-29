@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MINIMUM_ACCOUNT_AGE } from "@/lib/ageGate";
 
 // === Auth ===
 export const emailSchema = z
@@ -21,7 +22,7 @@ export const nameSchema = z
 // === Profile ===
 export const profileSchema = z.object({
   name: nameSchema,
-  age: z.number().min(13, "Idade mínima 13 anos").max(120, "Idade máxima 120 anos").nullable().optional(),
+  age: z.number().min(MINIMUM_ACCOUNT_AGE, "Idade minima 18 anos").max(120, "Idade maxima 120 anos").nullable().optional(),
   weight: z.number().min(20, "Peso mínimo 20kg").max(500, "Peso máximo 500kg").nullable().optional(),
   height: z.number().min(50, "Altura mínima 50cm").max(300, "Altura máxima 300cm").nullable().optional(),
   goal: z.string().max(50, "Objetivo muito longo").nullable().optional(),

@@ -11,11 +11,17 @@ interface Profile {
   name: string;
   username: string | null;
   avatar_url: string | null;
+  birth_date: string | null;
   age: number | null;
   weight: number | null;
   height: number | null;
   goal: string | null;
   experience_level: string | null;
+  adult_verified_at: string | null;
+  terms_accepted_at: string | null;
+  privacy_accepted_at: string | null;
+  age_gate_blocked_at: string | null;
+  age_gate_block_reason: string | null;
 }
 
 interface AuthContextType {
@@ -24,11 +30,14 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   needsOnboarding: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  requiresAgeVerification: boolean;
+  isAgeGateBlocked: boolean;
+  signUp: (email: string, password: string, name: string, birthDate: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
+  verifyAdultAccess: (birthDate: string) => Promise<{ allowed: boolean; error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -49,7 +58,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!error && data) {
       setProfile(data);
+      return data;
     }
+
+    setProfile(null);
+    return null;
   };
 
   useEffect(() => {
@@ -60,22 +73,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
+        setLoading(true);
         setTimeout(() => {
-          void fetchProfile(nextSession.user.id);
+          void fetchProfile(nextSession.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         setProfile(null);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
-    void supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
+    void supabase.auth.getSession().then(async ({ data: { session: nextSession } }) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        void fetchProfile(nextSession.user.id);
+        await fetchProfile(nextSession.user.id);
       }
 
       setLoading(false);
@@ -84,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, birthDate: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -92,6 +105,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: getAuthRedirectUrl(),
         data: {
           name,
+          birth_date: birthDate,
+          adult_declaration: true,
+          terms_accepted: true,
+          privacy_accepted: true,
         },
       },
     });
@@ -100,12 +117,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    return { error: error as Error | null };
+    if (error) {
+      return { error: error as Error | null };
+    }
+
+    if (data.user) {
+      const nextProfile = await fetchProfile(data.user.id);
+
+      if (nextProfile?.age_gate_blocked_at) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+
+        return {
+          error: new Error("Conta bloqueada porque o WEMOVELT e exclusivo para maiores de 18 anos."),
+        };
+      }
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
@@ -154,13 +190,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const verifyAdultAccess = async (birthDate: string) => {
+    const { data, error } = await supabase.rpc("verify_adult_profile", {
+      p_accept_privacy: true,
+      p_accept_terms: true,
+      p_birth_date: birthDate,
+    });
+
+    if (error) {
+      return { allowed: false, error: error as Error };
+    }
+
+    const result = data as { allowed?: boolean; message?: string } | null;
+    await refreshProfile();
+
+    if (result?.allowed) {
+      return { allowed: true, error: null };
+    }
+
+    return {
+      allowed: false,
+      error: new Error(result?.message ?? "Nao foi possivel confirmar sua idade."),
+    };
+  };
+
   const refreshProfile = async () => {
     if (user) {
       await fetchProfile(user.id);
     }
   };
 
-  const needsOnboarding = Boolean(profile && !profile.goal && !profile.experience_level);
+  const isAgeGateBlocked = Boolean(profile?.age_gate_blocked_at);
+  const requiresAgeVerification = Boolean(user && profile && !profile.adult_verified_at && !isAgeGateBlocked);
+  const needsOnboarding = Boolean(profile && profile.adult_verified_at && !profile.goal && !profile.experience_level);
 
   return (
     <AuthContext.Provider
@@ -170,11 +232,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         profile,
         loading,
         needsOnboarding,
+        requiresAgeVerification,
+        isAgeGateBlocked,
         signUp,
         signIn,
         signOut,
         resetPassword,
         updateProfile,
+        verifyAdultAccess,
         refreshProfile,
       }}
     >

@@ -20,8 +20,8 @@ describe("AuthModal smoke", () => {
     render(<AuthModal open onOpenChange={vi.fn()} mode="login" onSuccess={vi.fn()} />);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Email Address")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Seu e-mail")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Senha")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Login" }).length).toBeGreaterThan(0);
   });
 });

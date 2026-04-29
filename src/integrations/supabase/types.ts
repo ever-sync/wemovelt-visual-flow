@@ -371,40 +371,58 @@ export type Database = {
       }
       profiles: {
         Row: {
+          adult_verified_at: string | null
           age: number | null
+          age_gate_block_reason: string | null
+          age_gate_blocked_at: string | null
           avatar_url: string | null
+          birth_date: string | null
           created_at: string | null
           experience_level: string | null
           goal: string | null
           height: number | null
           id: string
           name: string
+          privacy_accepted_at: string | null
+          terms_accepted_at: string | null
           updated_at: string | null
           username: string | null
           weight: number | null
         }
         Insert: {
+          adult_verified_at?: string | null
           age?: number | null
+          age_gate_block_reason?: string | null
+          age_gate_blocked_at?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string | null
           experience_level?: string | null
           goal?: string | null
           height?: number | null
           id: string
           name: string
+          privacy_accepted_at?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
           username?: string | null
           weight?: number | null
         }
         Update: {
+          adult_verified_at?: string | null
           age?: number | null
+          age_gate_block_reason?: string | null
+          age_gate_blocked_at?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string | null
           experience_level?: string | null
           goal?: string | null
           height?: number | null
           id?: string
           name?: string
+          privacy_accepted_at?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
           username?: string | null
           weight?: number | null
@@ -694,6 +712,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_adult_verified: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       register_check_in_secure: {
         Args: {
           p_gym_id?: string | null
@@ -703,6 +727,14 @@ export type Database = {
           p_qr_code?: string | null
         }
         Returns: Database["public"]["Tables"]["check_ins"]["Row"]
+      }
+      verify_adult_profile: {
+        Args: {
+          p_accept_privacy?: boolean
+          p_accept_terms?: boolean
+          p_birth_date: string
+        }
+        Returns: Json
       }
     }
     Enums: {
@@ -838,4 +870,3 @@ export const Constants = {
     },
   },
 } as const
-
